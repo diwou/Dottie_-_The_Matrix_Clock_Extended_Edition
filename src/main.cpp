@@ -893,6 +893,23 @@ static void setupOTA() {
   otaReady = true;
 }
 
+// ============================================================
+// Deferred SPI-Aktionen: Web-Task (Core 0) darf mx.*() nicht
+// direkt aufrufen, weil der Haupt-Loop (Core 1) gleichzeitig
+// Display-Updates via SPI sendet. Stattdessen setzt der
+// Web-Handler nur Flags, die der Haupt-Loop abarbeitet.
+// ============================================================
+static volatile bool g_spiBrightnessForce = false;
+static volatile bool g_spiPwmChanged = false;
+
+void requestBrightnessFromLoop() {
+  g_spiBrightnessForce = true;
+}
+
+void requestPwmFromLoop() {
+  g_spiPwmChanged = true;
+}
+
 #include "webserver.h"
 
 // ============================================================
@@ -1188,6 +1205,15 @@ void loop() {
 
   // ⑥b Umgebungslicht -> Displayhelligkeit
   retryLightSensorIfNeeded();
+  if (g_spiBrightnessForce) {
+    g_spiBrightnessForce = false;
+    updateBrightnessFromLux(true);
+  }
+  if (g_spiPwmChanged) {
+    g_spiPwmChanged = false;
+    if (cfg.pwm_duty >= 10) pwmStop();
+    else pwmStart();
+  }
   updateBrightnessFromLux();
 
   // ⑧a Scroll-Animation tick (~50 Hz während Transition)

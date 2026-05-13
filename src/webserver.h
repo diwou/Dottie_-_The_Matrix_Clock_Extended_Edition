@@ -7,6 +7,10 @@
 extern ClockWebServer server;
 extern DNSServer        dnsServer;
 
+// Deferred SPI actions: web task must not call mx.*() directly.
+extern void requestBrightnessFromLoop();
+extern void requestPwmFromLoop();
+
 static bool firmwareUpdateOk = false;
 static String firmwareUpdateError;
 
@@ -754,11 +758,10 @@ static void applyFormToConfig() {
   cfg.auto_brightness = server.hasArg(F("auto_brightness"));
   if (!server.hasArg(F("pwm_enabled"))) {
     cfg.pwm_duty = 10;
-    pwmStop();
   } else if (server.hasArg(F("pwm_duty"))) {
     cfg.pwm_duty = (uint8_t)constrain(server.arg(F("pwm_duty")).toInt(), 1, 5);
-    pwmStart();
   }
+  requestPwmFromLoop();
 
   cfg.show_24h     = server.hasArg(F("show_24h"));
   cfg.show_seconds = server.hasArg(F("show_seconds"));
@@ -772,7 +775,7 @@ static void applyFormToConfig() {
   lastDispDate[0] = 0;
   lastDispWeekday[0] = 0;
 
-  updateBrightnessFromLux(true);
+  requestBrightnessFromLoop();
   cfg.ota_enabled  = server.hasArg(F("ota_enabled"));
   if (server.hasArg(F("ota_password"))) cfg.ota_password = arg("ota_password");
 }
