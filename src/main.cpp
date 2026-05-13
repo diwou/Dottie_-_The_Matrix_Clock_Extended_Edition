@@ -921,8 +921,8 @@ void requestPwmFromLoop() {
 // ============================================================
 // Zeit-Strings
 // ============================================================
-static const char* weekdayLabelDe(uint8_t wday) {
-  static const char* DAYS[7] = {
+static const char* weekdayLabelDe(uint8_t wday, bool mixedCase) {
+  static const char* DAYS_UC[7] = {
     "SONNTAG",
     "MONTAG",
     "DIENSTAG",
@@ -931,7 +931,17 @@ static const char* weekdayLabelDe(uint8_t wday) {
     "FREITAG",
     "SAMSTAG"
   };
-  return (wday < 7) ? DAYS[wday] : "--";
+  static const char* DAYS_MC[7] = {
+    "Sonntag",
+    "Montag",
+    "Dienstag",
+    "Mittwoch",
+    "Donnerst.",
+    "Freitag",
+    "Samstag"
+  };
+  if (wday >= 7) return "--";
+  return mixedCase ? DAYS_MC[wday] : DAYS_UC[wday];
 }
 
 static bool getLocalStrings(char timeStr[9], char dateStr[11], String& weekdayStr) {
@@ -1002,7 +1012,7 @@ static bool getLocalStrings(char timeStr[9], char dateStr[11], String& weekdaySt
       formatDateDmy(dateStr, dy, mo, y4);
       break;
   }
-  weekdayStr = weekdayLabelDe((uint8_t)tmNow.tm_wday);
+  weekdayStr = weekdayLabelDe((uint8_t)tmNow.tm_wday, cfg.weekday_mixed_case);
   return true;
 }
 

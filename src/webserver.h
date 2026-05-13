@@ -645,6 +645,19 @@ static void handleRoot() {
         checked(cfg.scroll_enabled) +
         F("><label>Scroll-Effekt beim Ziffernwechsel</label></div>"));
   chunk(F("<p class='hint'>Ziffern der Uhrzeit scrollen von unten nach oben wenn sie sich &auml;ndern.</p>"));
+  chunk(F("<h3>Wochentagsanzeige</h3>"));
+  chunk(F("<label>Schriftart (3. Zeile)</label>"));
+  {
+    String sel = F("<select name='bottom_font'>");
+    for (uint8_t i = 0; i < 6; i++) {
+      sel += String(F("<option value='")) + i + F("'") + selected(cfg.bottom_font == i) + F(">") + BOTTOM_FONT_LABELS[i] + F("</option>");
+    }
+    sel += F("</select>");
+    chunk(sel);
+  }
+  chunk(String(F("<div class='chk'><input type='checkbox' name='weekday_mixed_case' value='1'")) +
+        checked(cfg.weekday_mixed_case) +
+        F("><label>Gro&szlig;-/Kleinschreibung (z.&nbsp;B. Mittwoch statt MITTWOCH)</label></div>"));
   chunk(F("</div>")); // panel display
 
   // ============================================================
@@ -768,6 +781,8 @@ static void applyFormToConfig() {
   if (server.hasArg(F("date_fmt"))) cfg.date_fmt = (uint8_t)constrain(server.arg(F("date_fmt")).toInt(), 0, 4);
   cfg.scroll_enabled = server.hasArg(F("scroll_enabled"));
   cfg.dark_mode = server.hasArg(F("dark_mode"));
+  if (server.hasArg(F("bottom_font"))) cfg.bottom_font = (uint8_t)constrain(server.arg(F("bottom_font")).toInt(), 0, 5);
+  cfg.weekday_mixed_case = server.hasArg(F("weekday_mixed_case"));
   // Scroll-State und Display-Cache zurücksetzen
   for (uint8_t _i = 0; _i < 8; _i++) scrollState[_i] = {};
   scrollInitDone = false;

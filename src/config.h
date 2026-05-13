@@ -70,6 +70,8 @@ struct Config {
   bool     auto_brightness  = false;
   bool     scroll_enabled   = true; // Scroll-Effekt auf Ziffern
   bool     dark_mode        = false;
+  uint8_t  bottom_font       = 0;  // 0=ncenR08 1=helvR08 2=timR08 3=courR08 4=lubR08 5=helvB08
+  bool     weekday_mixed_case = false; // false=GROSSBUCHSTABEN, true=Groß/Klein
 
   // OTA
   bool     ota_enabled   = true;
@@ -180,9 +182,11 @@ static bool loadConfig() {
     CFG_INT("ip_show_sec",      ip_show_sec,      uint16_t)
     CFG_INT("brightness",       brightness,       uint8_t)
     CFG_INT("pwm_duty",         pwm_duty,         uint8_t)
+    CFG_INT("bottom_font",      bottom_font,      uint8_t)
     CFG_BOOL("auto_brightness", auto_brightness)
     CFG_BOOL("scroll_enabled",  scroll_enabled)
     CFG_BOOL("dark_mode",       dark_mode)
+    CFG_BOOL("weekday_mixed_case", weekday_mixed_case)
     CFG_BOOL("ota_enabled",  ota_enabled)
     CFG_STR("ota_password",  ota_password)
 
@@ -226,9 +230,11 @@ static bool saveConfig() {
   W("ip_show_sec",      cfg.ip_show_sec);
   W("brightness",       cfg.brightness);
   W("pwm_duty",         cfg.pwm_duty);
+  W("bottom_font",      cfg.bottom_font);
   W("auto_brightness",  cfg.auto_brightness ? "1" : "0");
   W("scroll_enabled",   cfg.scroll_enabled ? 1 : 0);
   W("dark_mode",        cfg.dark_mode ? "1" : "0");
+  W("weekday_mixed_case", cfg.weekday_mixed_case ? "1" : "0");
   W("ota_enabled",  cfg.ota_enabled ? "1" : "0");
   W("ota_password", cfg.ota_password);
   #undef W

@@ -5,6 +5,7 @@
 #include "config.h"
 
 extern MD_MAX72XX mx;
+extern const char* BOTTOM_FONT_LABELS[6];
 
 // Physikalisches Display-Mapping (obere / untere Zeile)
 static const uint8_t MAP_TOP[8]    = {0,1,2,3,4,5,6,7};
@@ -394,7 +395,25 @@ static void clearRow(const uint8_t rowMap[8]) {
 // Maske 0x80>>col = MSB→linkes Pixel, LSB→rechtes Pixel.
 // ============================================================
 static u8g2_t g_u8g2_bottom;
-static bool   g_u8g2_bottom_init = false;
+static int8_t g_u8g2_current_font = -1;  // Neuladen erzwingen bei Änderung
+
+static const uint8_t* BOTTOM_FONTS[] = {
+  u8g2_font_ncenR08_tr,   // 0: New Century Schoolbook
+  u8g2_font_helvR08_tr,   // 1: Helvetica
+  u8g2_font_timR08_tr,    // 2: Times
+  u8g2_font_courR08_tr,   // 3: Courier
+  u8g2_font_lubR08_tr,    // 4: Lubalin Graph
+  u8g2_font_helvB08_tr,   // 5: Helvetica Bold
+};
+
+const char* BOTTOM_FONT_LABELS[6] = {
+  "New Century Schoolbook",
+  "Helvetica",
+  "Times Roman",
+  "Courier",
+  "Lubalin Graph",
+  "Helvetica Bold",
+};
 
 static uint8_t u8x8_byte_bottom_dummy(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr) {
   (void)u8x8; (void)msg; (void)arg_int; (void)arg_ptr;
@@ -407,12 +426,13 @@ static uint8_t u8x8_gpio_bottom_dummy(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int
 }
 
 static void initU8g2Bottom() {
-  if (g_u8g2_bottom_init) return;
+  int8_t fid = (int8_t)constrain((int)cfg.bottom_font, 0, 5);
+  if (g_u8g2_current_font == fid) return;
+  g_u8g2_current_font = fid;
   u8g2_Setup_max7219_64x8_f(&g_u8g2_bottom, U8G2_R0,
     u8x8_byte_bottom_dummy, u8x8_gpio_bottom_dummy);
-  u8g2_SetFont(&g_u8g2_bottom, u8g2_font_ncenR08_tr);
+  u8g2_SetFont(&g_u8g2_bottom, BOTTOM_FONTS[fid]);
   u8g2_SetFontMode(&g_u8g2_bottom, 1);
-  g_u8g2_bottom_init = true;
 }
 
 static void drawBottomTextU8g2Centered(const String& s) {
