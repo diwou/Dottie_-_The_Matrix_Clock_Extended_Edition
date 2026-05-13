@@ -192,15 +192,9 @@ static void drawTimeHHMMSS(const char* t) {
         scrollState[i].target = c;
         drawTopChar(i, c);
       } else if (scrollState[i].step == 0) {
-        // Scroll starten mit Subsekunden-Kompensation:
-        // Bereits vergangene Steps überspringen → beide Uhren landen im gleichen Frame
-        struct timeval tv; gettimeofday(&tv, nullptr);
-        uint32_t ms_in_sec   = tv.tv_usec / 1000;
-        uint32_t elapsed_steps = ms_in_sec / 20;  // 20 ms pro Tick-Step
-        uint8_t  remaining   = (elapsed_steps >= SCROLL_STEPS) ? 1
-                               : (SCROLL_STEPS - (uint8_t)elapsed_steps);
+        // Scroll starten: immer mit voller Schrittzahl
         scrollState[i].target     = c;
-        scrollState[i].step       = remaining;
+        scrollState[i].step       = SCROLL_STEPS;
         scrollState[i].totalSteps = SCROLL_STEPS;
       } else {
         // Scroll läuft bereits — Ziel aktualisieren ohne Neustart
