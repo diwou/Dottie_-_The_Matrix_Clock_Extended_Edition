@@ -20,7 +20,7 @@ Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1.0.0
 - Sichtbare Projektbezeichnung in Firmware/Web-UI/Dokumentation auf `Dottie - The Matrix Clock 'Extended Version'` vereinheitlicht. (Ref: f496800)
 
 ### Behoben
-- Race-Condition auf dem SPI-Bus zwischen Web-Server-Task (Core 0) und Haupt-Loop (Core 1) behoben: manuelle Helligkeits- und PWM-Änderungen aus dem Webinterface werden nicht mehr direkt im Web-Task per `mx.control()` auf die MAX7219 geschrieben, sondern über Deferred-Flags sicher im Haupt-Loop verarbeitet. Behebt zufällige Pixelfehler und ungleichmäßige Helligkeit besonders bei Sprung von dunkel (0) auf hell (10–15). (Ref: <wird nach Commit ergänzt>)
+- Race-Condition auf dem SPI-Bus zwischen Web-Server-Task (Core 0) und Haupt-Loop (Core 1) behoben: manuelle Helligkeits- und PWM-Änderungen aus dem Webinterface werden nicht mehr direkt im Web-Task per `mx.control()` auf die MAX7219 geschrieben, sondern über Deferred-Flags sicher im Haupt-Loop verarbeitet. Behebt zufällige Pixelfehler und ungleichmäßige Helligkeit besonders bei Sprung von dunkel (0) auf hell (10–15). (Ref: fd5b648)
 - Status- und Boot-Texte wieder auf die 2. Zeile (mittlere Modulreihe) gelegt; die 3. Zeile ist für den Wochentag reserviert. (Ref: e8b8731)
 - Wochentage in der 3. Zeile auf lesbare 5x7-Glyphen korrigiert (inklusive `M` und `G`) und Donnerstag als `DONNERST.` umgesetzt. (Ref: e8b8731)
 - 5x7-Zeichensatz für die Wochentagsanzeige vervollständigt (u. a. fehlendes `C` für `MITTWOCH`) und auf fehlende Großbuchstaben geprüft. (Ref: 0f209dd)
