@@ -1,0 +1,212 @@
+<!-- markdownlint-disable MD022 MD024 MD032 -->
+
+# Changelog – Dottie - The Matrix Clock 'Extended Version'
+
+Alle nennenswerten Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
+
+Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
+
+---
+
+## [Unreleased]
+
+### Neu
+- Projekt als eigenständige Extended-Edition vom Basisprojekt `Dottie_-_The_Matrix_Clock` abgeleitet und auf eigenes Repository umgestellt: https://codeberg.org/diwou/Dottie_-_The_Matrix_Clock_Extended_Edition (Basis: https://codeberg.org/diwou/Dottie_-_The_Matrix_Clock). (Ref: 930b941)
+- Display-Layout auf 24 Dot-Matrix-Module erweitert (3 Reihen × 8 Module): obere Reihe Uhrzeit, mittlere Reihe Datum, untere Reihe Wochentag. (Ref: 930b941)
+- BME680 am bestehenden I2C-Bus ergänzt (Adressprüfung 0x76/0x77, Initialisierung und Diagnose-Status). (Ref: 930b941)
+- Neuer Web-UI-Reiter `Umweltdaten` mit BME680-Status und separater I2C-Diagnoseausgabe für Umweltsensoren. (Ref: 930b941)
+
+### Geändert
+- Sichtbare Projektbezeichnung in Firmware/Web-UI/Dokumentation auf `Dottie - The Matrix Clock 'Extended Version'` vereinheitlicht. (Ref: f496800)
+
+### Behoben
+- Status- und Boot-Texte wieder auf die 2. Zeile (mittlere Modulreihe) gelegt; die 3. Zeile ist für den Wochentag reserviert. (Ref: e8b8731)
+- Wochentage in der 3. Zeile auf lesbare 5x7-Glyphen korrigiert (inklusive `M` und `G`) und Donnerstag als `DONNERST.` umgesetzt. (Ref: e8b8731)
+- Projektbild aus `images/Dottie – The Matrix Clock.jpg` in die README und die öffentliche Installer-Seite eingebunden. (Ref: board-2026-05-11-project-image)
+- Öffentliche Codeberg-Pages-Seite für den Browser-Installer angelegt, analog zum HUB75-Projekt. (Ref: board-2026-05-11-pages-installer)
+- Web-UI um einen umschaltbaren Light-/Dark-Mode ergänzt und als Konfigurationsoption gespeichert. (Ref: board-2026-05-11-dark-mode)
+- Die Uhr oben rechts bleibt im Web-UI unabhängig vom Theme im bisherigen dunklen Stil. (Ref: board-2026-05-11-dark-mode-clock)
+
+## [1.5.0] - 2026-05-11
+
+### Neu
+- Firmware und Build-Konfiguration auf die neue ESP32-S3-WROOM-1-N16R8-Platine vorbereitet; Display-, Reset- und I2C-Pins werden zentral per Build-Flags gesetzt. (Ref: board-2026-05-10-esp32s3)
+- Factory-Reset und I2C auf die gemeldete Verdrahtung angepasst: Reset auf `IO9`, SDA auf `IO38`, SCL auf `IO39`. (Ref: board-2026-05-10-pinfix)
+- S3-Upload auf native USB-CDC umgestellt, damit PlatformIO nicht mehr an RTS/DTR-Reset auf `ttyACM0` scheitert. (Ref: board-2026-05-10-usb-upload)
+- Upload-Port auf den stabilen Espressif-by-id-Pfad umgestellt, damit die USB-Enumeration nicht mehr an wechselnden `ttyACM`-Namen hängt. (Ref: board-2026-05-10-usb-byid)
+- VEML7700-Lichtsensor angebunden und als optionale automatische Helligkeitsregelung im Webinterface eingebaut. (Ref: board-2026-05-10-veml7700)
+- I2C-Initialisierung des VEML7700 meldet jetzt eine konkrete Diagnose, wenn der Sensor nicht antwortet. (Ref: board-2026-05-10-veml7700-diag)
+- Eigener `RTC`-Reiter im Webinterface ergänzt, mit Status, manueller Datum-/Zeiteingabe und I2C-Diagnose für den DS3231-Pfad. (Ref: board-2026-05-11-rtc-tab)
+- Firmware-Installer im `System`-Tab ergänzt; `.bin`-Dateien können direkt per Webinterface eingespielt und danach neu gestartet werden. (Ref: board-2026-05-11-firmware-installer)
+
+### Geändert
+- KiCad-Projektspiegel mit `source/`, `fab/rev0.4/` und Stücklisten-/Fertigungsdaten in die Repository-Doku aufgenommen. (Ref: board-2026-05-11-kicad-mirror)
+- README um die aktuelle Funktionsbeschreibung mit DS3231-RTC, CR2032-Pufferung, VEML7700-Lichtsensor, RTC-Tab und NTP-Korrektur erweitert. (Ref: board-2026-05-11-readme)
+- README um den direkten Verweis auf den Firmware-Installer im `System`-Tab und die exportierten Firmware-Artefakte ergänzt. (Ref: board-2026-05-11-readme-installer)
+- README um einen direkten Link auf die Web-UI mit Firmware-Installer unter `http://dottie.local/` im lokalen Netz erweitert. (Ref: board-2026-05-11-readme-web-updater)
+- Build exportiert jetzt automatisch `Firmware/<version>/` und `Firmware/latest/` mit Manifest und Flash-Binaries für den Firmware-Installer. (Ref: board-2026-05-11-firmware-export)
+- Projektregeln, Release-Dokumentation und `.gitignore` auf dieses Repository abgestimmt; `AGENTS.md` ist nicht mehr ignoriert und kann versioniert werden. (Ref: review-2026-04-28-regeln)
+- Versionsquelle auf `APP_VERSION_BASE` in `src/config.h` umgestellt und Build-Erzeugung von `include/version_generated.h` mit Codeberg-Kurz-Hash ergänzt. (Ref: review-2026-04-28-version)
+- Reproduzierbarkeit des Builds verbessert: PlatformIO-Plattform und `MD_MAX72XX` sind fest gepinnt, lokale OTA-IP aus der Projektkonfiguration entfernt. (Ref: review-2026-04-28-build)
+- Projektspezifischen `npm run spell` mit `cspell`-Konfiguration ergänzt. (Ref: review-2026-04-28-spell)
+- CSpell-Dictionary `@cspell/dict-de-de` lokal als Projektabhängigkeit erfasst und `node_modules/` ignoriert, damit die Konfiguration `cspell-ext.json` sauber auflösen kann. (Ref: fix-2026-04-28-cspell)
+- PlatformIO-Default-Env auf `nodemcuv2_ota` festgelegt, Serial-Upload in `nodemcuv2` explizit gemacht und störende `#warning`-/Python-Warnungen aus dem Build unterdrückt. (Ref: fix-2026-04-28-platformio)
+- `delay(0)` in `chunk()` durch `yield()` ersetzt – verhindert Watchdog-Timeout bei großen HTML-Seiten. (Ref: ea26b7a)
+- `NtpLogEntry` von `String` auf `char[]`-Buffer umgestellt – reduziert Heap-Fragmentierung im NTP-Log-Ringpuffer. (Ref: ea26b7a)
+
+### Behoben
+- DS3231 ist jetzt die Laufzeit-Zeitquelle; NTP korrigiert nur noch die RTC und die ESP-Systemzeit wird nicht mehr als Zeitbasis verwendet. Der Status zeigt dazu die aktuelle Zeitquelle in der Web-UI und per API an. (Ref: board-2026-05-11-ds3231-time)
+- Wenn beim Start noch keine gueltige Zeit vorliegt, versucht die Firmware NTP erneut, aber erst wenn DNS im WLAN bereit ist, damit kein fruehes "DNS fehlgeschlagen" entsteht. (Ref: board-2026-05-11-ntp-retry)
+- Software-PWM wird jetzt in der Hauptschleife getaktet statt per asynchronem Ticker; das verhindert korrupt gezeichnete Ziffern und reduziert Flackern beim Sekundenwechsel. (Ref: board-2026-05-11-pwm-loop)
+- I2C-Diagnose zeigt jetzt zusätzlich den DS3231-Pfad an, damit ein einzelnes VEML-NACK nicht den Eindruck erweckt, der ganze Bus wäre tot. (Ref: board-2026-05-10-i2c-scan)
+- OTA startet jetzt auch im AP-Modus, und das OTA-Target zeigt per Default auf `dottie.local` statt auf eine harte LAN-IP. (Ref: board-2026-05-10-ota-target)
+- VEML7700 wird bei einem anfänglichen I2C-NACK jetzt später erneut angefragt, damit die Helligkeitsregelung nicht an einem einzelnen Startfehler hängen bleibt. (Ref: board-2026-05-10-veml7700-retry)
+- Webserver läuft auf dem ESP32-S3 jetzt in einem eigenen Task, damit das Laden der Web-UI den Display-Loop nicht mehr ausbremst. (Ref: board-2026-05-10-webtask)
+- Für VS Codium gibt es jetzt eine direkte OTA-Task, die den PlatformIO-Upload ohne den fehleranfälligen Upload-Dialog ausführt. (Ref: board-2026-05-10-vscodium-ota)
+- Die obere Zeile behält jetzt die Zeichenreihenfolge `HH:MM:SS`, während die Module weiterhin um 180° gedreht gerendert werden. (Ref: board-2026-05-10-top-order)
+- Die oberen 8 Matrix-Module werden jetzt vor dem Zeichnen um 180° gedreht, damit die gemeldete Einbaulage zur Firmware passt. (Ref: board-2026-05-10-top-rotate180)
+- Erfolgreiche NTP-Antworten setzen die Systemzeit jetzt sofort, statt nur den späteren SNTP-Sync abzuwarten. (Ref: board-2026-05-10-ntp-fast-sync)
+- Matrix-Ansteuerung auf direkten GPIO-Modus umgestellt, damit `CLK`, `DIN` und `CS` ohne ESP32-S3-Hardware-SPI-Host direkt über die gemeldeten GPIOs laufen. (Ref: board-2026-05-10-direct-pin)
+- Matrix-Ansteuerung auf den HSPI-Host des ESP32-S3 umgestellt, damit der externe Clock-Pin nicht mehr über den FSPI-Host läuft. (Ref: board-2026-05-10-hspi)
+- Matrix-Ansteuerung auf einen eigenen ESP32-S3-SPI-Bus umgestellt, damit `CLK` sauber auf `GPIO12` statt auf den geteilten Default-Bus läuft. (Ref: board-2026-05-10-displayspi)
+- LittleFS auf dem ESP32-S3 wird jetzt beim ersten Mount automatisch formatiert, damit neue Boards die WLAN-Konfiguration speichern können. (Ref: board-2026-05-10-littlefs)
+- Web-UI zeigt den letzten NTP-Sync nicht mehr als laufend aktualisierte aktuelle Uhrzeit an. (Ref: review-2026-04-28-ntp-sync)
+- Fehler beim Laden oder Speichern der LittleFS-Konfiguration werden nicht mehr stillschweigend als Erfolg behandelt. (Ref: review-2026-04-28-config-io)
+- JSON-Ausgabe des manuellen NTP-Tests escaped Strings jetzt JSON-konform statt per HTML-Escape. (Ref: review-2026-04-28-json)
+
+[Unreleased]: https://codeberg.org/diwou/Dottie_-_The_Matrix_Clock/compare/v1.5.0...HEAD
+[1.5.0]: https://codeberg.org/diwou/Dottie_-_The_Matrix_Clock/compare/v1.4.7...v1.5.0
+
+---
+
+## [1.4.7] – 2026-04-09
+
+### Geändert
+- Projekt für die Veröffentlichung auf Codeberg vorbereitet: `README.md` auf Versionsstand, Repository-URL und Lizenzangaben aktualisiert. (Ref: 31b90bb)
+- `.gitignore` für ein sauberes öffentliches Repository geschärft, damit lokale KI-/IDE-Dateien, Build-Artefakte und temporäre Dateien nicht mit ins Git gelangen. (Ref: 31b90bb)
+- Firmware-Versionsstring auf `1.4.7` angehoben, damit Code, Dokumentation und Release-Stand konsistent sind. (Ref: 31b90bb)
+
+---
+
+## [1.4.6] – 2026-03-28
+
+### Verbessert
+- **Subsekunden-Kompensation für synchrone Scroll-Animationen:** Zwei Uhren am gleichen NTP-Server animieren den Sekundenwechsel jetzt auf ≤ 1 Frame (~20ms) genau synchron. (Ref: 31b90bb)
+  - `drawTimeHHMMSS()`: beim Scroll-Start wird per `gettimeofday()` die aktuelle Position innerhalb der Sekunde ermittelt; bereits vergangene Animation-Steps werden übersprungen, sodass die Uhr sofort im richtigen Frame einsteigt.
+  - Scroll-Tick-Timer: `lastScrollMs += 20` statt `= millis()` verhindert akkumulierten Drift. Beim ersten Tick wird der Timer auf das Sub-Sekunden-20ms-Raster ausgerichtet.
+  - Display-Update-Intervall von 200 ms auf 50 ms reduziert: Sekundenwechsel werden bis zu 4× früher erkannt (Erkennungsjitter ±50 ms statt ±200 ms).
+
+---
+
+## [1.4.5] – 2026-03-19
+
+### Behoben
+- `LOST`-Anzeige blieb dauerhaft im unteren Display stehen, wenn die WLAN-Verbindung kurz unterbrochen und sofort wiederhergestellt wurde. Ursache: `lastDispDate` wurde nach dem `drawBottomText5x7Centered("LOST")`-Aufruf nicht invalidiert, sodass der Loop-Vergleich keinen Unterschied erkannte und das Display nicht neu zeichnete. Fix: `lastDispTime` und `lastDispDate` werden nach der LOST-Anzeige geleert, um einen erzwungenen Redraw auszulösen. (Ref: 31b90bb)
+
+---
+
+## [1.4.4]
+
+### Geändert
+- PWM auf `Ticker`-Bibliothek umgestellt: Die Phasenwechsel werden jetzt unabhängig vom Haupt-Loop über `yield()`-Callbacks getriggert. Der Ticker feuert auch dann, wenn der Loop durch `server.handleClient()`, `ArduinoOTA.handle()` oder `MDNS.update()` belegt ist – Loop-Jitter hat damit keinen Einfluss mehr auf die PWM-Zeiten. (Ref: 31b90bb)
+
+### Behoben
+- OTA: `pwmStop()` wird jetzt im `onStart`-Callback aufgerufen, stoppt den Ticker und schaltet das Display sicher ein. (Ref: 31b90bb)
+
+---
+
+## [1.4.3]
+
+### Behoben
+- OTA: Display war während des Uploads dunkel, weil `ArduinoOTA.handle()` den Loop blockiert und die PWM-Dunkelphase nicht beendet werden konnte. Im `onStart`-Callback wird SHUTDOWN nun explizit aufgehoben. (Ref: 31b90bb)
+- PWM-Periode von 40 ms (25 Hz) auf 20 ms (50 Hz) korrigiert: 25 Hz lag im klar sichtbaren Flicker-Bereich und verursachte starkes Flimmern nach OTA-Neustart. (Ref: 31b90bb)
+- PWM-State-Machine: `phaseStartMs` wird beim ersten Aufruf auf `millis()` initialisiert, verhindert sofortigen Dark-Burst beim Systemstart. (Ref: 31b90bb)
+
+---
+
+## [1.4.2]
+
+### Behoben
+- PWM-Pulsrichtung korrigiert: kurze Pulse liegen jetzt auf der Dunkelseite, nicht der Hellseite → keine hellen Blitze mehr bei niedrigen Abdunklungsstufen; robuster gegenüber ungleichmäßigen Loop-Durchlaufzeiten. (Ref: 31b90bb)
+- `g_pwmOn`-Initialzustand korrigiert (war `true` statt `false`) → Restore auf „Kein PWM" schaltet Display nun zuverlässig wieder ein. (Ref: 31b90bb)
+- Label „Einschaltzeit" → „Abdunklungsstärke" (entspricht jetzt dem tatsächlichen Effekt: 10% = 10% der Zeit dunkel). (Ref: 31b90bb)
+
+---
+
+## [1.4.0]
+
+### Neu
+- **Software-PWM-Dimmer**: Helligkeit unterhalb der Hardware-Stufe 0 durch 50-Hz-SHUTDOWN-PWM des MAX7219. (Ref: 31b90bb)
+  - Schieberegler im Display-Tab (1–5, entspricht 10–50 % Einschaltzeit) + Checkbox zum Aktivieren
+  - Nützlicher Bereich: 10–50 % (ab ~60 % wird Flackern wahrnehmbar)
+  - Neue Config-Option `pwm_duty` (Standard: 10 = deaktiviert)
+- **Neustart-Seite**: Nach Reboot aus dem Webinterface wartet der Browser automatisch auf den ESP und lädt die Startseite neu. (Ref: 31b90bb)
+
+### Behoben
+- SHUTDOWN-Register-Logik korrigiert (ON/OFF waren invertiert → Display blieb nach Deaktivieren des PWM dauerhaft dunkel). (Ref: 31b90bb)
+
+---
+
+## [1.3.1]
+
+### Neu
+- Umbenennung: "NTP Uhr" → **"Dottie – The Matrix Clock"**. (Ref: 31b90bb)
+- mDNS/OTA-Hostname geändert: `ntpclock` → `dottie` (`dottie.local`). (Ref: 31b90bb)
+- AP-SSID-Prefix geändert: `NTP-UHR-` → `DOTTIE-`. (Ref: 31b90bb)
+
+### Behoben
+- `GLYPH_M` (8×8) korrigiert: 2-Pixel-breite Striche passend zum restlichen Font. (Ref: 31b90bb)
+
+---
+
+## [1.3.0]
+
+### Neu
+- **12h-Modus** mit AM/PM-Anzeige (im 12h-Modus entfallen die Sekunden, stattdessen AM/PM). (Ref: 31b90bb)
+- Sekunden im 24h-Modus nun **deaktivierbar** (Display-Tab). (Ref: 31b90bb)
+- **5 Datumsformate** wählbar. (Ref: 31b90bb)
+  - `DD.MM.YYYY` (Standard)
+  - `MM/DD/YYYY`
+  - `YYYY-MM-DD` (ISO 8601)
+  - `DD.MM.YY`
+  - `MM/DD/YY`
+- Neue Glyphen: `M` (8×8), `/` und `-` (5×7) für die neuen Formate. (Ref: 31b90bb)
+
+---
+
+## [1.2.5]
+
+### Behoben
+- Fehlende Glyphen ergänzt. (Ref: 31b90bb)
+  - 8×8: `%`, `?`
+  - 5×7: `A`, `B`, `H`, `L`
+
+---
+
+## [1.1.0] – Major Refactor
+
+### Neu
+- **OTA (ArduinoOTA)**: Kabellose Firmware-Updates, Progress-Anzeige auf dem Matrix-Display. (Ref: 31b90bb)
+- **NTP-Sync-Protokoll**: Ringpuffer im RAM (letzte 5 Einträge), in Web-UI sichtbar. (Ref: 31b90bb)
+- **Automatischer WiFi-Reconnect** mit State-Machine und exponentiellem Backoff (30 s → 300 s). (Ref: 31b90bb)
+- **Uptime-Anzeige** in der Web-UI. (Ref: 31b90bb)
+- **mDNS**: Gerät unter `dottie.local` erreichbar. (Ref: 31b90bb)
+
+### Verbessert
+- **Web-UI** komplett neu gestaltet: modernes Design, Tabs (Status/WiFi/NTP/Zeitzone/Display/System), responsive Layout, Live-Display-Vorschau (Canvas). (Ref: 31b90bb)
+- **Speicher**: PROGMEM für HTML-Strings, `F()`-Makros konsequent überall. (Ref: 31b90bb)
+- **Stabilität**: vollständige WiFi-Reconnect-Logik, AP-Fallback (Captive Portal). (Ref: 31b90bb)
+- **NTP-Probe**: robustere Implementierung mit DNS-Fallback, IP-Cache, Fehlerklassifizierung. (Ref: 31b90bb)
+- **Code-Qualität**: Konstanten statt Magic-Numbers, klare Benennung, kein duplizierter Code. (Ref: 31b90bb)
+
+---
+
+## [1.0.x] – Initiale Versionen
+
+Grundlegende Funktionalität:
+- NTP-Synchronisation (einzelner Server). (Ref: 31b90bb)
+- Zeitanzeige auf TOP-Matrix (8×8-Glyphen). (Ref: 31b90bb)
+- Datumsanzeige auf BOTTOM-Matrix (5×7-Glyphen). (Ref: 31b90bb)
+- Einfache Web-UI zur WLAN-Konfiguration. (Ref: 31b90bb)
+- LittleFS-Konfigurationsdatei (`/cfg.txt`). (Ref: 31b90bb)
+- Factory-Reset via GPIO16. (Ref: 31b90bb)

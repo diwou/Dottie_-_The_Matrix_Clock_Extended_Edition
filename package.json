@@ -1,0 +1,9 @@
+{
+  "scripts": {
+    "spell": "npx --yes --package cspell@8.19.4 --package @cspell/dict-de-de cspell --config cspell.json AGENTS.md CHANGELOG.md README.md docs/RELEASING.md"
+  },
+  "devDependencies": {
+    "@cspell/dict-de-de": "^4.1.2",
+    "cspell": "^8.19.4"
+  }
+}
