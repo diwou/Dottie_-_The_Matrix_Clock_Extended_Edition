@@ -425,7 +425,7 @@ static void drawBottomTextU8g2Centered(const String& s) {
   u8g2_uint_t tw = u8g2_GetStrWidth(&g_u8g2_bottom, str);
   u8g2_uint_t x = (tw < 64) ? (64 - tw) / 2 : 0;
 
-  u8g2_DrawStr(&g_u8g2_bottom, x, 7, str);
+  u8g2_DrawStr(&g_u8g2_bottom, x, 8, str);
 
   // Buffer (horizontal_right_lsb) auslesen → MAX7219 kopieren
   uint8_t *buf = u8g2_GetBufferPtr(&g_u8g2_bottom); // 8 Zeilen × 8 Tiles = 64 Byte
