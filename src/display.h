@@ -338,21 +338,32 @@ static void drawMiddleText5x7Centered(const String& s) {
 }
 
 static void drawBottomText5x7Centered(const String& s) {
-  // Feste 6x7-Zeichenzellen (echtes 6x7-Raster)
   clearRow(MAP_BOTTOM);
-  uint8_t len = (uint8_t)s.length();
-  uint8_t wTotal = (uint8_t)min((uint16_t)(len * 6U), (uint16_t)64U);
-  uint8_t x = (wTotal < 64) ? (64 - wTotal) / 2 : 0;
+  char txt[9];
+  memset(txt, ' ', 8);
+  txt[8] = '\0';
+  bool hasTrailingDot = false;
 
-  for (uint8_t k = 0; k < len && x < 64; k++) {
-    char ch = s[k];
-    for (uint8_t col = 0; col < 6 && x < 64; col++, x++) {
-      uint8_t bits = glyphCol6x7(ch, col);
+  if (s.length() == 9 && s.endsWith(".")) {
+    for (uint8_t i = 0; i < 8; i++) txt[i] = s[i];
+    hasTrailingDot = true;
+  } else {
+    uint8_t len = (uint8_t)min((int)s.length(), 8);
+    for (uint8_t i = 0; i < len; i++) txt[i] = s[i];
+  }
+
+  // 6x7 pro 8x8-Modul, ein Zeichen pro Modul, ohne Zwischenraum.
+  for (uint8_t m = 0; m < 8; m++) {
+    const uint8_t x0 = (uint8_t)(m * 8 + 1);
+    for (uint8_t col = 0; col < 6; col++) {
+      const uint8_t bits = glyphCol6x7(txt[m], col);
       for (uint8_t y = 0; y < 7; y++) {
-        if (bits & (1 << y)) rowSet(MAP_BOTTOM, x, y + 1, true);
+        if (bits & (1 << y)) rowSet(MAP_BOTTOM, (uint8_t)(x0 + col), y + 1, true);
       }
     }
   }
+
+  if (hasTrailingDot) rowSet(MAP_BOTTOM, 63, 7, true);
 }
 
 // ============================================================

@@ -112,7 +112,9 @@ static inline void applyBrightness(uint8_t intensity) {
   if (intensity > 15) intensity = 15;
   if (displayIntensityApplied == intensity) return;
   displayIntensityApplied = intensity;
-  mx.control(MD_MAX72XX::INTENSITY, intensity);
+  for (uint8_t dev = 0; dev < MAX_DEVICES; dev++) {
+    mx.control((uint8_t)dev, MD_MAX72XX::INTENSITY, intensity);
+  }
 }
 
 static inline void applyConfiguredBrightness() {

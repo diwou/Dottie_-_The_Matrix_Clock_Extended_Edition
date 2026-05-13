@@ -25,6 +25,8 @@ Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1.0.0
 - 5x7-Zeichensatz für die Wochentagsanzeige vervollständigt (u. a. fehlendes `C` für `MITTWOCH`) und auf fehlende Großbuchstaben geprüft. (Ref: 0f209dd)
 - Zeile für den Wochentag auf echtes 6x7-Raster umgestellt und sofortige Anzeigeaktualisierung nach Web-Änderungen korrigiert, damit keine fehlerhaften Restpixel stehen bleiben. (Ref: c2241e0)
 - Helligkeitsänderungen aus dem Webinterface greifen wieder sofort (auch über `Sofort anwenden`) und der Regler wirkt im Auto-Modus als relative Korrektur zur VEML7700-Regelung. (Ref: c2241e0)
+- Darstellung des Wochentags auf 6x7 pro Modul korrigiert (ein Zeichen je 8x8-Modul, ohne Zwischenraum), inklusive sauberer 8-Zeichen-Abbildung und Donnerstag-Sonderfall. (Ref: 1f1db3e)
+- Helligkeitsanwendung auf alle 24 Module vereinheitlicht, damit Web-Änderungen ohne Neustart sofort auf das gesamte Display wirken. (Ref: 1f1db3e)
 - Projektbild aus `images/Dottie – The Matrix Clock.jpg` in die README und die öffentliche Installer-Seite eingebunden. (Ref: board-2026-05-11-project-image)
 - Öffentliche Codeberg-Pages-Seite für den Browser-Installer angelegt, analog zum HUB75-Projekt. (Ref: board-2026-05-11-pages-installer)
 - Web-UI um einen umschaltbaren Light-/Dark-Mode ergänzt und als Konfigurationsoption gespeichert. (Ref: board-2026-05-11-dark-mode)
