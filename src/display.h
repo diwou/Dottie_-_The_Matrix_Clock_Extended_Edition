@@ -410,7 +410,7 @@ static void initU8g2Bottom() {
   if (g_u8g2_bottom_init) return;
   u8g2_Setup_max7219_64x8_f(&g_u8g2_bottom, U8G2_R0,
     u8x8_byte_bottom_dummy, u8x8_gpio_bottom_dummy);
-  u8g2_SetFont(&g_u8g2_bottom, u8g2_font_helvR08_tr);
+  u8g2_SetFont(&g_u8g2_bottom, u8g2_font_ncenR08_tr);
   u8g2_SetFontMode(&g_u8g2_bottom, 1);
   g_u8g2_bottom_init = true;
 }
