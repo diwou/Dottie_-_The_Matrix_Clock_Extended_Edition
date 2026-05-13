@@ -611,6 +611,7 @@ static bool ntpProbeOnce(const String& host, uint16_t timeoutMs, String* detail 
   uint8_t pkt[48] = {};
   pkt[0] = 0x1B;
 
+  uint32_t t1 = millis();  // Startzeit vor Senden
   if (!udp.beginPacket(ip, 123)) { udp.stop(); if(detail) *detail=how+F(" BEGINPKT_FAIL"); return false; }
   if (udp.write(pkt, 48) != 48) { udp.stop(); if(detail) *detail=how+F(" WRITE_FAIL");    return false; }
   if (!udp.endPacket())          { udp.stop(); if(detail) *detail=how+F(" ENDPKT_FAIL");   return false; }
@@ -619,15 +620,21 @@ static bool ntpProbeOnce(const String& host, uint16_t timeoutMs, String* detail 
   while (millis() - start < timeoutMs) {
     int len = udp.parsePacket();
     if (len > 0) {
+      uint32_t t4 = millis();  // Empfangszeitpunkt
       uint8_t buf[48]; int n = udp.read(buf, min(len, 48));
       udp.stop();
       if (n < 48)       { if(detail) *detail=how+F(" SHORT=") +n; return false; }
       if ((buf[0]&7)!=4){ if(detail) *detail=how+F(" BAD_MODE=")+(buf[0]&7); return false; }
       uint32_t txSec = ((uint32_t)buf[40]<<24)|((uint32_t)buf[41]<<16)|
                        ((uint32_t)buf[42]<<8 )|buf[43];
+      uint32_t txFrac= ((uint32_t)buf[44]<<24)|((uint32_t)buf[45]<<16)|
+                       ((uint32_t)buf[46]<<8 )|buf[47];
       if (!txSec)        { if(detail) *detail=how+F(" BAD_TS"); return false; }
+      // Subsekunden-Anteil ms + halbe Round-Trip-Zeit → auf ganze Sekunden runden
+      uint32_t extraMs = (uint32_t)(((uint64_t)txFrac * 1000ULL) >> 32) + (t4 - t1) / 2;
+      txSec += (extraMs + 500) / 1000;
       if (txSecOut) *txSecOut = txSec;
-      if (detail) *detail = how + F(" OK txSec=") + txSec;
+      if (detail) *detail = how + F(" OK txSec=") + txSec + F(" extraMs=") + extraMs;
       return true;
     }
     delay(10); yield();
@@ -659,6 +666,7 @@ static bool ntpProbeByIp(const IPAddress& ip, uint16_t timeoutMs, String* detail
   uint8_t pkt[48] = {};
   pkt[0] = 0x1B;
 
+  uint32_t t1 = millis();
   if (!udpDirect.beginPacket(ip, 123)) { udpDirect.stop(); if (detail) *detail=F("BEGINPKT_FAIL"); return false; }
   if (udpDirect.write(pkt, 48) != 48)  { udpDirect.stop(); if (detail) *detail=F("WRITE_FAIL");    return false; }
   if (!udpDirect.endPacket())           { udpDirect.stop(); if (detail) *detail=F("ENDPKT_FAIL");   return false; }
@@ -667,15 +675,20 @@ static bool ntpProbeByIp(const IPAddress& ip, uint16_t timeoutMs, String* detail
   while (millis() - start < timeoutMs) {
     int len = udpDirect.parsePacket();
     if (len > 0) {
+      uint32_t t4 = millis();
       uint8_t buf[48]; int n = udpDirect.read(buf, min(len, 48));
       udpDirect.stop();
       if (n < 48)        { if (detail) *detail=String(F("SHORT="))+n; return false; }
       if ((buf[0]&7)!=4) { if (detail) *detail=String(F("BAD_MODE="))+(buf[0]&7); return false; }
       uint32_t txSec = ((uint32_t)buf[40]<<24)|((uint32_t)buf[41]<<16)|
                        ((uint32_t)buf[42]<<8)|buf[43];
+      uint32_t txFrac= ((uint32_t)buf[44]<<24)|((uint32_t)buf[45]<<16)|
+                       ((uint32_t)buf[46]<<8)|buf[47];
       if (!txSec) { if (detail) *detail=F("BAD_TS=0"); return false; }
+      uint32_t extraMs = (uint32_t)(((uint64_t)txFrac * 1000ULL) >> 32) + (t4 - t1) / 2;
+      txSec += (extraMs + 500) / 1000;
       if (txSecOut) *txSecOut = txSec;
-      if (detail) *detail = String(F("OK txSec=")) + txSec + F(" ip=") + ip.toString();
+      if (detail) *detail = String(F("OK txSec=")) + txSec + F(" ip=") + ip.toString() + F(" extraMs=") + extraMs;
       return true;
     }
     delay(10); yield();
