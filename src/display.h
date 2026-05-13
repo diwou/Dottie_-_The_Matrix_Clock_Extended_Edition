@@ -1,6 +1,7 @@
 #pragma once
 
 #include <MD_MAX72xx.h>
+#include <U8g2lib.h>
 #include "config.h"
 
 extern MD_MAX72XX mx;
@@ -383,6 +384,57 @@ static inline void rowSet(const uint8_t rowMap[8], uint8_t x, uint8_t y, bool on
 
 static void clearRow(const uint8_t rowMap[8]) {
   for (uint8_t i = 0; i < 8; i++) mx.clear(rowMap[i]);
+}
+
+// ============================================================
+// U8g2-Proportionalschrift für die untere Zeile (64×8 Pixel)
+// Rendert in einen Offscreen-Buffer, kopiert dann die Pixel
+// via rowSet() auf die MAX7219-Module – keine SPI-Konkurrenz.
+// ============================================================
+static u8g2_t g_u8g2_bottom;
+static bool   g_u8g2_bottom_init = false;
+
+static uint8_t u8x8_byte_bottom_dummy(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr) {
+  (void)u8x8; (void)msg; (void)arg_int; (void)arg_ptr;
+  return 1;
+}
+
+static uint8_t u8x8_gpio_bottom_dummy(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr) {
+  (void)u8x8; (void)msg; (void)arg_int; (void)arg_ptr;
+  return 1;
+}
+
+static void initU8g2Bottom() {
+  if (g_u8g2_bottom_init) return;
+  u8g2_Setup_max7219_64x8_f(&g_u8g2_bottom, U8G2_R0,
+    u8x8_byte_bottom_dummy, u8x8_gpio_bottom_dummy);
+  u8g2_SetFont(&g_u8g2_bottom, u8g2_font_helvR08_tf);
+  u8g2_SetFontMode(&g_u8g2_bottom, 1);
+  g_u8g2_bottom_init = true;
+}
+
+static void drawBottomTextU8g2Centered(const String& s) {
+  initU8g2Bottom();
+  clearRow(MAP_BOTTOM);
+
+  const char* str = s.c_str();
+  u8g2_ClearBuffer(&g_u8g2_bottom);
+
+  u8g2_uint_t tw = u8g2_GetStrWidth(&g_u8g2_bottom, str);
+  u8g2_uint_t x = (tw < 64) ? (64 - tw) / 2 : 0;
+
+  u8g2_DrawStr(&g_u8g2_bottom, x, 8, str);
+
+  // Buffer-Pixel → MAX7219-Module kopieren
+  uint8_t *buf = u8g2_GetBufferPtr(&g_u8g2_bottom); // 8 tiles × 8 bytes = 64 bytes
+  for (uint8_t col = 0; col < 64; col++) {
+    uint8_t tile = col / 8;
+    for (uint8_t row = 0; row < 8; row++) {
+      if (buf[tile * 8 + row] & (1 << (col & 7))) {
+        rowSet(MAP_BOTTOM, col, row, true);
+      }
+    }
+  }
 }
 
 static void drawRowText5x7Centered(const String& s, const uint8_t rowMap[8]) {

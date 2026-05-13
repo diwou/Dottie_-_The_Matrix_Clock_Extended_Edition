@@ -1255,7 +1255,7 @@ void loop() {
         strcpy(lastDate, "");
         lastWeekday[0] = '\0';
         drawMiddleText5x7Centered(WiFi.softAPIP().toString());
-        drawBottomText5x7Centered(F(""));
+        drawBottomTextU8g2Centered(F(""));
       }
     } else {
       const char* noTimeStr = cfg.show_24h
@@ -1267,7 +1267,7 @@ void loop() {
         strcpy(lastDate, "NO NTP");
         strcpy(lastWeekday, "NO NTP");
         drawMiddleText5x7Centered(F("NO NTP"));
-        drawBottomText5x7Centered(F(""));
+        drawBottomTextU8g2Centered(F(""));
       }
     }
     return;
@@ -1278,7 +1278,7 @@ void loop() {
   if (wd != String(lastWeekday)) {
     strncpy(lastWeekday, wd.c_str(), sizeof(lastDispWeekday) - 1);
     lastWeekday[sizeof(lastDispWeekday) - 1] = '\0';
-    drawBottomText5x7Centered(wd);
+    drawBottomTextU8g2Centered(wd);
   }
   pwmService();
 }
