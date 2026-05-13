@@ -872,6 +872,7 @@ static void setupOTA() {
     pwmStop();  // Dimmen anhalten, Display einschalten
     drawTopCentered(F("OTA"));
     drawMiddleText5x7Centered(F("UPDATE"));
+    clearRow(MAP_BOTTOM);
   });
   ArduinoOTA.onProgress([](unsigned int prog, unsigned int total) {
     static uint8_t lastPct = 255;
@@ -884,10 +885,15 @@ static void setupOTA() {
   ArduinoOTA.onEnd([]() {
     drawTopCentered(F("DONE"));
     drawMiddleText5x7Centered(F("REBOOT"));
+    clearRow(MAP_BOTTOM);
+    lastDispTime[0] = '\0';
+    lastDispDate[0] = '\0';
+    lastDispWeekday[0] = '\0';
   });
   ArduinoOTA.onError([](ota_error_t err) {
     drawTopCentered(F("OTA ERR"));
     drawMiddleText5x7Centered(String(err));
+    clearRow(MAP_BOTTOM);
   });
   ArduinoOTA.begin();
   otaReady = true;
