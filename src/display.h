@@ -390,6 +390,9 @@ static void clearRow(const uint8_t rowMap[8]) {
 // U8g2-Proportionalschrift für die untere Zeile (64×8 Pixel)
 // Rendert in einen Offscreen-Buffer, kopiert dann die Pixel
 // via rowSet() auf die MAX7219-Module – keine SPI-Konkurrenz.
+// ACHTUNG: u8g2_ll_hvline_vertical_top_lsb speichert den Buffer
+// spaltenweise! Ein Byte = 8 vertikale Pixel einer Spalte.
+// Bit 0 = oberstes Pixel (y=0), Bit 7 = unterstes (y=7).
 // ============================================================
 static u8g2_t g_u8g2_bottom;
 static bool   g_u8g2_bottom_init = false;
@@ -423,14 +426,14 @@ static void drawBottomTextU8g2Centered(const String& s) {
   u8g2_uint_t tw = u8g2_GetStrWidth(&g_u8g2_bottom, str);
   u8g2_uint_t x = (tw < 64) ? (64 - tw) / 2 : 0;
 
-  u8g2_DrawStr(&g_u8g2_bottom, x, 8, str);
+  u8g2_DrawStr(&g_u8g2_bottom, x, 7, str);
 
-  // Buffer-Pixel → MAX7219-Module kopieren
-  uint8_t *buf = u8g2_GetBufferPtr(&g_u8g2_bottom); // 8 tiles × 8 bytes = 64 bytes
+  // Spaltenweisen Buffer auslesen und auf MAX7219-Module kopieren
+  uint8_t *buf = u8g2_GetBufferPtr(&g_u8g2_bottom); // 64 Bytes = 64 Spalten
   for (uint8_t col = 0; col < 64; col++) {
-    uint8_t tile = col / 8;
+    uint8_t byte_val = buf[col];  // 8 vertikale Pixel für Spalte col
     for (uint8_t row = 0; row < 8; row++) {
-      if (buf[tile * 8 + row] & (1 << (col & 7))) {
+      if (byte_val & (1 << row)) {  // Bit row = Pixel bei y=row
         rowSet(MAP_BOTTOM, col, row, true);
       }
     }
