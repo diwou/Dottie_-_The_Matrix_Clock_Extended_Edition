@@ -22,6 +22,7 @@ Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1.0.0
 ### Behoben
 - Status- und Boot-Texte wieder auf die 2. Zeile (mittlere Modulreihe) gelegt; die 3. Zeile ist für den Wochentag reserviert. (Ref: e8b8731)
 - Wochentage in der 3. Zeile auf lesbare 5x7-Glyphen korrigiert (inklusive `M` und `G`) und Donnerstag als `DONNERST.` umgesetzt. (Ref: e8b8731)
+- 5x7-Zeichensatz für die Wochentagsanzeige vervollständigt (u. a. fehlendes `C` für `MITTWOCH`) und auf fehlende Großbuchstaben geprüft. (Ref: 0f209dd)
 - Projektbild aus `images/Dottie – The Matrix Clock.jpg` in die README und die öffentliche Installer-Seite eingebunden. (Ref: board-2026-05-11-project-image)
 - Öffentliche Codeberg-Pages-Seite für den Browser-Installer angelegt, analog zum HUB75-Projekt. (Ref: board-2026-05-11-pages-installer)
 - Web-UI um einen umschaltbaren Light-/Dark-Mode ergänzt und als Konfigurationsoption gespeichert. (Ref: board-2026-05-11-dark-mode)

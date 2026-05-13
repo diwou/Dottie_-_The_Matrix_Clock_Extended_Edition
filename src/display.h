@@ -231,24 +231,32 @@ static uint8_t glyphCol5x7(char c, uint8_t i) {
     case '9': { static const uint8_t a[5]={0x06,0x49,0x49,0x29,0x1E}; return i<5?a[i]:0; }
     case '.': { return i < 2 ? 0x60 : 0; }
     case ' ': return 0;
-    case 'I': { static const uint8_t a[5]={0x00,0x41,0x7F,0x41,0x00}; return i<5?a[i]:0; }
-    case 'F': { static const uint8_t a[5]={0x7F,0x09,0x09,0x09,0x01}; return i<5?a[i]:0; }
-    case 'W': { static const uint8_t a[5]={0x7F,0x20,0x18,0x20,0x7F}; return i<5?a[i]:0; }
-    case 'O': { static const uint8_t a[5]={0x3E,0x41,0x41,0x41,0x3E}; return i<5?a[i]:0; }
-    case 'U': { static const uint8_t a[5]={0x3F,0x40,0x40,0x40,0x3F}; return i<5?a[i]:0; }
-    case 'N': { static const uint8_t a[5]={0x7F,0x02,0x0C,0x10,0x7F}; return i<5?a[i]:0; }
-    case 'P': { static const uint8_t a[5]={0x7F,0x09,0x09,0x09,0x06}; return i<5?a[i]:0; }
-    case 'D': { static const uint8_t a[5]={0x7F,0x41,0x41,0x22,0x1C}; return i<5?a[i]:0; }
-    case 'R': { static const uint8_t a[5]={0x7F,0x09,0x19,0x29,0x46}; return i<5?a[i]:0; }
-    case 'E': { static const uint8_t a[5]={0x7F,0x49,0x49,0x49,0x41}; return i<5?a[i]:0; }
-    case 'S': { static const uint8_t a[5]={0x46,0x49,0x49,0x49,0x31}; return i<5?a[i]:0; }
-    case 'T': { static const uint8_t a[5]={0x01,0x01,0x7F,0x01,0x01}; return i<5?a[i]:0; }
     case 'A': { static const uint8_t a[5]={0x7E,0x11,0x11,0x11,0x7E}; return i<5?a[i]:0; }
     case 'B': { static const uint8_t a[5]={0x7F,0x49,0x49,0x49,0x36}; return i<5?a[i]:0; }
+    case 'C': { static const uint8_t a[5]={0x3E,0x41,0x41,0x41,0x22}; return i<5?a[i]:0; }
+    case 'D': { static const uint8_t a[5]={0x7F,0x41,0x41,0x22,0x1C}; return i<5?a[i]:0; }
+    case 'E': { static const uint8_t a[5]={0x7F,0x49,0x49,0x49,0x41}; return i<5?a[i]:0; }
+    case 'F': { static const uint8_t a[5]={0x7F,0x09,0x09,0x09,0x01}; return i<5?a[i]:0; }
     case 'G': { static const uint8_t a[5]={0x3E,0x41,0x49,0x49,0x7A}; return i<5?a[i]:0; }
     case 'H': { static const uint8_t a[5]={0x7F,0x08,0x08,0x08,0x7F}; return i<5?a[i]:0; }
+    case 'I': { static const uint8_t a[5]={0x00,0x41,0x7F,0x41,0x00}; return i<5?a[i]:0; }
+    case 'J': { static const uint8_t a[5]={0x20,0x40,0x41,0x3F,0x01}; return i<5?a[i]:0; }
+    case 'K': { static const uint8_t a[5]={0x7F,0x08,0x14,0x22,0x41}; return i<5?a[i]:0; }
     case 'L': { static const uint8_t a[5]={0x7F,0x40,0x40,0x40,0x40}; return i<5?a[i]:0; }
     case 'M': { static const uint8_t a[5]={0x7F,0x02,0x04,0x02,0x7F}; return i<5?a[i]:0; }
+    case 'N': { static const uint8_t a[5]={0x7F,0x02,0x0C,0x10,0x7F}; return i<5?a[i]:0; }
+    case 'O': { static const uint8_t a[5]={0x3E,0x41,0x41,0x41,0x3E}; return i<5?a[i]:0; }
+    case 'P': { static const uint8_t a[5]={0x7F,0x09,0x09,0x09,0x06}; return i<5?a[i]:0; }
+    case 'Q': { static const uint8_t a[5]={0x3E,0x41,0x51,0x21,0x5E}; return i<5?a[i]:0; }
+    case 'R': { static const uint8_t a[5]={0x7F,0x09,0x19,0x29,0x46}; return i<5?a[i]:0; }
+    case 'S': { static const uint8_t a[5]={0x46,0x49,0x49,0x49,0x31}; return i<5?a[i]:0; }
+    case 'T': { static const uint8_t a[5]={0x01,0x01,0x7F,0x01,0x01}; return i<5?a[i]:0; }
+    case 'U': { static const uint8_t a[5]={0x3F,0x40,0x40,0x40,0x3F}; return i<5?a[i]:0; }
+    case 'V': { static const uint8_t a[5]={0x1F,0x20,0x40,0x20,0x1F}; return i<5?a[i]:0; }
+    case 'W': { static const uint8_t a[5]={0x7F,0x20,0x18,0x20,0x7F}; return i<5?a[i]:0; }
+    case 'X': { static const uint8_t a[5]={0x63,0x14,0x08,0x14,0x63}; return i<5?a[i]:0; }
+    case 'Y': { static const uint8_t a[5]={0x03,0x04,0x78,0x04,0x03}; return i<5?a[i]:0; }
+    case 'Z': { static const uint8_t a[5]={0x61,0x51,0x49,0x45,0x43}; return i<5?a[i]:0; }
     case '/': { static const uint8_t a[5]={0x60,0x38,0x0C,0x06,0x03}; return i<5?a[i]:0; }
     case '-': { static const uint8_t a[5]={0x08,0x08,0x08,0x08,0x08}; return i<5?a[i]:0; }
     default:  return 0;
@@ -292,7 +300,21 @@ static void drawMiddleText5x7Centered(const String& s) {
 }
 
 static void drawBottomText5x7Centered(const String& s) {
-  drawRowText5x7Centered(s, MAP_BOTTOM);
+  // Feste 6x7-Zeichenzellen: 5 Pixel Glyph + 1 Pixel Leertrennung
+  clearRow(MAP_BOTTOM);
+  uint8_t len = (uint8_t)s.length();
+  uint8_t wTotal = (uint8_t)min((uint16_t)(len * 6U), (uint16_t)64U);
+  uint8_t x = (wTotal < 64) ? (64 - wTotal) / 2 : 0;
+
+  for (uint8_t k = 0; k < len && x < 64; k++) {
+    char ch = s[k];
+    for (uint8_t col = 0; col < 6 && x < 64; col++, x++) {
+      uint8_t bits = (col < 5) ? glyphCol5x7(ch, col) : 0;
+      for (uint8_t y = 0; y < 7; y++) {
+        if (bits & (1 << y)) rowSet(MAP_BOTTOM, x, y + 1, true);
+      }
+    }
+  }
 }
 
 // ============================================================
