@@ -11,7 +11,8 @@ Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1.0.0
 ## [Unreleased]
 
 ### Neu
-- Dritte Modulreihe (Wochentag) auf U8g2-Proportionalschrift (`u8g2_font_helvR08_tf`) umgestellt; Rendering erfolgt in einen Offscreen-Buffer, dann kopiert auf die MAX7219-Module via bestehendem `rowSet()`. (Ref: a5af151)
+- Dritte Modulreihe (Wochentag) auf U8g2-Proportionalschrift umgestellt (ncenR08, helvR08, timR08, courR08, lubR08, helvB08 &uuml;ber Web-UI w&auml;hlbar); Rendering erfolgt in einen Offscreen-Buffer, dann kopiert auf die MAX7219-Module via bestehendem `rowSet()`. (Ref: a5af151, ba83ac7)
+- Wochentagsanzeige: Umschaltung Gro&szlig;buchstaben / gemischte Schreibweise im Webinterface erg&auml;nzt. (Ref: ba83ac7)
 - Projekt als eigenständige Extended-Edition vom Basisprojekt `Dottie_-_The_Matrix_Clock` abgeleitet und auf eigenes Repository umgestellt: https://codeberg.org/diwou/Dottie_-_The_Matrix_Clock_Extended_Edition (Basis: https://codeberg.org/diwou/Dottie_-_The_Matrix_Clock). (Ref: 930b941)
 - Display-Layout auf 24 Dot-Matrix-Module erweitert (3 Reihen × 8 Module): obere Reihe Uhrzeit, mittlere Reihe Datum, untere Reihe Wochentag. (Ref: 930b941)
 - BME680 am bestehenden I2C-Bus ergänzt (Adressprüfung 0x76/0x77, Initialisierung und Diagnose-Status). (Ref: 930b941)
