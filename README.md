@@ -2,7 +2,7 @@
 
 Eine Dot-Matrix-Uhr auf Basis einer **ESP32-S3-WROOM-1-N16R8-Platine** mit 16 MAX7219-LED-Matrix-Modulen, DS3231-RTC mit CR2032-Pufferung und VEML7700-Lichtsensor. Die Uhr zeigt Zeit und Datum mit Scroll-Animation, regelt die Helligkeit automatisch nach Umgebungslicht, synchronisiert die hochgenaue RTC per NTP und bietet eine Weboberfläche für Konfiguration, Diagnose, manuelle RTC-Einstellung und Firmware-Upload.
 
-<img src="images/Dottie%20%E2%80%93%20The%20Matrix%20Clock.jpg" alt="Dottie - The Matrix Clock 'Extended Version'" width="100%">
+<img src="images/Dottie%20%E2%80%93%20The%20Matrix%20Clock%20Extended%20Edition.jpg" alt="Dottie - The Matrix Clock 'Extended Version'" width="100%">
 
 <p>
   <a href="https://diwou.codeberg.page/Dottie_-_The_Matrix_Clock/">

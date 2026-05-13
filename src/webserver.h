@@ -715,7 +715,7 @@ static bool parseRule(const String& s, uint8_t& m, uint8_t& w, uint8_t& d, uint8
   return m>=1&&m<=12 && w>=1&&w<=5 && d<=6 && h<=23;
 }
 
-static void handleSave() {
+static void applyFormToConfig() {
   auto arg = [&](const char* k) -> String { return trimStr(server.arg(k)); };
 
   if (server.hasArg(F("sta_ssid")))   cfg.sta_ssid  = arg("sta_ssid");
@@ -770,10 +770,15 @@ static void handleSave() {
   scrollInitDone = false;
   lastDispTime[0] = 0;
   lastDispDate[0] = 0;
+  lastDispWeekday[0] = 0;
 
   updateBrightnessFromLux(true);
   cfg.ota_enabled  = server.hasArg(F("ota_enabled"));
   if (server.hasArg(F("ota_password"))) cfg.ota_password = arg("ota_password");
+}
+
+static void handleSave() {
+  applyFormToConfig();
 
   if (!saveConfig()) {
     server.send(500, F("text/plain"), F("Konfiguration konnte nicht gespeichert werden."));
@@ -897,7 +902,12 @@ static void handleFirmwareUpdateUpload() {
 // ============================================================
 // Web-Handler: Apply / Reboot / Factory
 // ============================================================
-static void handleApply()        { applyTimeConfig(true); server.sendHeader(F("Location"),F("/")); server.send(303); }
+static void handleApply() {
+  applyFormToConfig();
+  applyTimeConfig(true);
+  server.sendHeader(F("Location"),F("/"));
+  server.send(303);
+}
 
 static const char REBOOT_PAGE[] PROGMEM =
   "<!doctype html><html><head><meta charset='utf-8'>"
@@ -931,7 +941,13 @@ static void sendRebootPage() {
   server.send_P(200, "text/html", REBOOT_PAGE);
 }
 
-static void handleApplyReboot()  { applyTimeConfig(true); sendRebootPage(); delay(400); ESP.restart(); }
+static void handleApplyReboot()  {
+  applyFormToConfig();
+  applyTimeConfig(true);
+  sendRebootPage();
+  delay(400);
+  ESP.restart();
+}
 static void handleReboot()       { sendRebootPage(); delay(400); ESP.restart(); }
 static void handleFactory()      { server.send(200,F("text/plain"),F("Factory Reset...")); delay(200); factoryReset(); }
 

@@ -263,6 +263,44 @@ static uint8_t glyphCol5x7(char c, uint8_t i) {
   }
 }
 
+static uint8_t glyphCol6x7(char c, uint8_t i) {
+  if (i > 5) return 0;
+  if (c == ' ') return 0;
+  if (c == '.') return (i == 5) ? 0x60 : 0x00;
+  if (c == '-') return (i >= 1 && i <= 4) ? 0x08 : 0x00;
+  // 6x7: 5 Nutzspalten + 1 Spalte, um den Zeichenkörper breiter zu machen.
+  if (i < 5) return glyphCol5x7(c, i);
+  switch (c) {
+    case 'A': return 0x7E;
+    case 'B': return 0x36;
+    case 'C': return 0x22;
+    case 'D': return 0x1C;
+    case 'E': return 0x41;
+    case 'F': return 0x01;
+    case 'G': return 0x7A;
+    case 'H': return 0x7F;
+    case 'I': return 0x00;
+    case 'J': return 0x01;
+    case 'K': return 0x41;
+    case 'L': return 0x40;
+    case 'M': return 0x7F;
+    case 'N': return 0x7F;
+    case 'O': return 0x3E;
+    case 'P': return 0x06;
+    case 'Q': return 0x5E;
+    case 'R': return 0x46;
+    case 'S': return 0x31;
+    case 'T': return 0x01;
+    case 'U': return 0x3F;
+    case 'V': return 0x1F;
+    case 'W': return 0x7F;
+    case 'X': return 0x63;
+    case 'Y': return 0x03;
+    case 'Z': return 0x43;
+    default: return 0x00;
+  }
+}
+
 static inline void rowSet(const uint8_t rowMap[8], uint8_t x, uint8_t y, bool on) {
   if (BOTTOM_MIRROR_WHOLE_ROW) x = 63 - x;
   uint8_t devPos = x / 8, col = x % 8, row = y;
@@ -300,7 +338,7 @@ static void drawMiddleText5x7Centered(const String& s) {
 }
 
 static void drawBottomText5x7Centered(const String& s) {
-  // Feste 6x7-Zeichenzellen: 5 Pixel Glyph + 1 Pixel Leertrennung
+  // Feste 6x7-Zeichenzellen (echtes 6x7-Raster)
   clearRow(MAP_BOTTOM);
   uint8_t len = (uint8_t)s.length();
   uint8_t wTotal = (uint8_t)min((uint16_t)(len * 6U), (uint16_t)64U);
@@ -309,7 +347,7 @@ static void drawBottomText5x7Centered(const String& s) {
   for (uint8_t k = 0; k < len && x < 64; k++) {
     char ch = s[k];
     for (uint8_t col = 0; col < 6 && x < 64; col++, x++) {
-      uint8_t bits = (col < 5) ? glyphCol5x7(ch, col) : 0;
+      uint8_t bits = glyphCol6x7(ch, col);
       for (uint8_t y = 0; y < 7; y++) {
         if (bits & (1 << y)) rowSet(MAP_BOTTOM, x, y + 1, true);
       }

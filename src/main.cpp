@@ -65,6 +65,7 @@ static uint32_t lastNtpProbeMs  = 0;
 static time_t   lastSyncEpoch   = 0;
 static char     lastDispTime[9]  = "";  // für Invalidierung nach mx.clear()
 static char     lastDispDate[11] = "";
+static char     lastDispWeekday[24] = "";
 static uint32_t bootMs          = 0;
 static bool     vemlOk          = false;
 static String   vemlDiag        = F("nicht gefunden");
@@ -176,7 +177,10 @@ static void updateBrightnessFromLux(bool force = false) {
     }
   }
 
-  applyBrightness(luxToBrightness(luxHold));
+  int autoBase = (int)luxToBrightness(luxHold);
+  int relativeOffset = (int)cfg.brightness - 8; // 8 = neutral
+  int finalIntensity = constrain(autoBase + relativeOffset, 0, 15);
+  applyBrightness((uint8_t)finalIntensity);
 }
 
 static inline uint8_t binToBcd(uint8_t v) {
@@ -1201,7 +1205,7 @@ void loop() {
   // lastDispTime / lastDispDate sind global (werden von handleRuntimeResetHold invalidiert)
   char* lastTime = lastDispTime;
   char* lastDate = lastDispDate;
-  static String lastWeekday = "";
+  char* lastWeekday = lastDispWeekday;
   static uint32_t lastMs   = 0;
 
   if (millis() - lastMs < 50) { pwmService(); delay(0); return; }
@@ -1215,7 +1219,7 @@ void loop() {
         strcpy(lastTime, "AP      ");
         drawTopCentered(F("AP"));
         strcpy(lastDate, "");
-        lastWeekday = "";
+        lastWeekday[0] = '\0';
         drawMiddleText5x7Centered(WiFi.softAPIP().toString());
         drawBottomText5x7Centered(F(""));
       }
@@ -1227,7 +1231,7 @@ void loop() {
         strcpy(lastTime, noTimeStr);
         drawTimeHHMMSS(noTimeStr);
         strcpy(lastDate, "NO NTP");
-        lastWeekday = "NO NTP";
+        strcpy(lastWeekday, "NO NTP");
         drawMiddleText5x7Centered(F("NO NTP"));
         drawBottomText5x7Centered(F(""));
       }
@@ -1237,6 +1241,10 @@ void loop() {
 
   if (strcmp(t, lastTime) != 0) { strcpy(lastTime, t); drawTimeHHMMSS(t); }
   if (strcmp(d, lastDate) != 0) { strcpy(lastDate, d); drawMiddleText5x7Centered(String(d)); }
-  if (wd != lastWeekday) { lastWeekday = wd; drawBottomText5x7Centered(wd); }
+  if (wd != String(lastWeekday)) {
+    strncpy(lastWeekday, wd.c_str(), sizeof(lastDispWeekday) - 1);
+    lastWeekday[sizeof(lastDispWeekday) - 1] = '\0';
+    drawBottomText5x7Centered(wd);
+  }
   pwmService();
 }
