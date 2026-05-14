@@ -22,7 +22,7 @@ Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1.0.0
 - Sichtbare Projektbezeichnung in Firmware/Web-UI/Dokumentation auf `Dottie - The Matrix Clock 'Extended Version'` vereinheitlicht. (Ref: f496800)
 
 ### Behoben
-- Eigene Datei `src/webserver.h` nach `src/ClockWebUi.h` umbenannt, um Namenskollision mit dem ESP32-Framework-Header `<WebServer.h>` unter Windows zu beheben (case-insensitive Dateisystem). (Ref: --pending--)
+- Eigene Datei `src/webserver.h` nach `src/ClockWebUi.h` umbenannt, um Namenskollision mit dem ESP32-Framework-Header `<WebServer.h>` unter Windows zu beheben (case-insensitive Dateisystem). (Ref: 8e687ff)
 - NTP-Zeitsynchronisation korrigiert: Subsekunden-Anteil der NTP-Transmit-Timestamp und halbe Round-Trip-Zeit werden jetzt ausgewertet und auf die nächste ganze Sekunde gerundet, bevor die RTC gesetzt wird. Behebt den ~1-Sekunden-Nachlauf der Uhrzeit. (Ref: 6bbb247)
 - Race-Condition auf dem SPI-Bus zwischen Web-Server-Task (Core 0) und Haupt-Loop (Core 1) behoben: manuelle Helligkeits- und PWM-Änderungen aus dem Webinterface werden nicht mehr direkt im Web-Task per `mx.control()` auf die MAX7219 geschrieben, sondern über Deferred-Flags sicher im Haupt-Loop verarbeitet. Behebt zufällige Pixelfehler und ungleichmäßige Helligkeit besonders bei Sprung von dunkel (0) auf hell (10–15). (Ref: 66e8020)
 - Dritte Modulreihe (Wochentag) wird beim OTA-Firmware-Update gelöscht, damit keine Restanzeige aus dem vorherigen Anzeigezyklus stehen bleibt. Zusätzlich Anzeige-Cache nach OTA-Ende invalidiert. (Ref: 674eaba)
