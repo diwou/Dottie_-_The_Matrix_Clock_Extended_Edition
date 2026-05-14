@@ -929,7 +929,7 @@ void requestPwmFromLoop() {
   g_spiPwmChanged = true;
 }
 
-#include "webserver.h"
+#include "ClockWebUi.h"
 
 // ============================================================
 // Zeit-Strings
@@ -949,7 +949,7 @@ static const char* weekdayLabelDe(uint8_t wday, bool mixedCase) {
     "Montag",
     "Dienstag",
     "Mittwoch",
-    "Donnerst.",
+    "Donnersta.",
     "Freitag",
     "Samstag"
   };
