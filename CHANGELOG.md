@@ -11,6 +11,7 @@ Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1.0.0
 ## [Unreleased]
 
 ### Neu
+- `.gitattributes` mit `* text=auto` angelegt, um plattformübergreifend konsistente Zeilenenden sicherzustellen. (Ref: 1cc6d42)
 - Dritte Modulreihe (Wochentag) auf U8g2-Proportionalschrift umgestellt (ncenR08, helvR08, timR08, courR08, lubR08, helvB08 über Web-UI wählbar); Rendering erfolgt in einen Offscreen-Buffer, dann kopiert auf die MAX7219-Module via bestehendem `rowSet()`. (Ref: a5af151, ba83ac7)
 - Wochentagsanzeige: Umschaltung Großbuchstaben / gemischte Schreibweise im Webinterface ergänzt. (Ref: ba83ac7)
 - Projekt als eigenständige Extended-Edition vom Basisprojekt `Dottie_-_The_Matrix_Clock` abgeleitet und auf eigenes Repository umgestellt: https://codeberg.org/diwou/Dottie_-_The_Matrix_Clock_Extended_Edition (Basis: https://codeberg.org/diwou/Dottie_-_The_Matrix_Clock). (Ref: 930b941)
