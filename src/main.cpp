@@ -562,7 +562,7 @@ static inline void formatDateDmy(char* out, uint8_t day, uint8_t month, uint16_t
 // ============================================================
 // NTP Probe
 // ============================================================
-static bool ntpProbeOnce(const String& host, uint16_t timeoutMs, String* detail = nullptr, uint32_t* txSecOut = nullptr) {
+static bool ntpProbeOnce(const String& host, uint16_t timeoutMs, String* detail = nullptr, uint32_t* txSecOut = nullptr, uint32_t* extraMsOut = nullptr) {
   if (!host.length())                 { if(detail) *detail=F("EMPTY_HOST"); return false; }
   if (WiFi.status() != WL_CONNECTED) { if(detail) *detail=F("NO_WIFI");    return false; }
 
@@ -632,6 +632,7 @@ static bool ntpProbeOnce(const String& host, uint16_t timeoutMs, String* detail 
       if (!txSec)        { if(detail) *detail=how+F(" BAD_TS"); return false; }
       // Subsekunden-Anteil ms + halbe Round-Trip-Zeit → auf ganze Sekunden runden
       uint32_t extraMs = (uint32_t)(((uint64_t)txFrac * 1000ULL) >> 32) + (t4 - t1) / 2;
+      if (extraMsOut) *extraMsOut = extraMs;
       txSec += (extraMs + 500) / 1000;
       if (txSecOut) *txSecOut = txSec;
       if (detail) *detail = how + F(" OK txSec=") + txSec + F(" extraMs=") + extraMs;
@@ -645,7 +646,7 @@ static bool ntpProbeOnce(const String& host, uint16_t timeoutMs, String* detail 
 }
 
 // NTP-Probe direkt per IP (kein DNS) — für Test & Fallback
-static bool ntpProbeByIp(const IPAddress& ip, uint16_t timeoutMs, String* detail, uint32_t* txSecOut = nullptr) {
+static bool ntpProbeByIp(const IPAddress& ip, uint16_t timeoutMs, String* detail, uint32_t* txSecOut = nullptr, uint32_t* extraMsOut = nullptr) {
   if (ip == (IPAddress)0U) { if (detail) *detail = F("IP=0 ungueltig"); return false; }
   if (WiFi.status() != WL_CONNECTED) { if (detail) *detail = F("NO_WIFI"); return false; }
 
@@ -686,6 +687,7 @@ static bool ntpProbeByIp(const IPAddress& ip, uint16_t timeoutMs, String* detail
                        ((uint32_t)buf[46]<<8)|buf[47];
       if (!txSec) { if (detail) *detail=F("BAD_TS=0"); return false; }
       uint32_t extraMs = (uint32_t)(((uint64_t)txFrac * 1000ULL) >> 32) + (t4 - t1) / 2;
+      if (extraMsOut) *extraMsOut = extraMs;
       txSec += (extraMs + 500) / 1000;
       if (txSecOut) *txSecOut = txSec;
       if (detail) *detail = String(F("OK txSec=")) + txSec + F(" ip=") + ip.toString() + F(" extraMs=") + extraMs;
@@ -743,10 +745,16 @@ static void applyTimeConfig(bool force) {
   lastNtpProbeMs = millis();
 
   String detail;
-  uint32_t txSec = 0;
-  ntpProbeOnce(best.length() ? best : cfg.ntp1, NTP_PROBE_TIMEOUT_MS, &detail, &txSec);
+  uint32_t txSec = 0, extraMs = 0;
+  ntpProbeOnce(best.length() ? best : cfg.ntp1, NTP_PROBE_TIMEOUT_MS, &detail, &txSec, &extraMs);
   if (txSec) {
-    time_t rtcEpoch = (time_t)(txSec - 2208988800UL);
+    uint32_t rounding = (extraMs + 500) / 1000;
+    uint32_t txSecRaw = txSec - rounding;
+    uint64_t nowMs = (uint64_t)(txSecRaw - 2208988800UL) * 1000ULL + extraMs;
+    uint64_t targetMs = ((nowMs + 999) / 1000) * 1000;
+    uint32_t waitMs = (targetMs > nowMs && targetMs - nowMs <= 1500) ? (uint32_t)(targetMs - nowMs) : 0;
+    if (waitMs) delay(waitMs);
+    time_t rtcEpoch = (time_t)(targetMs / 1000);
     lastSyncEpoch = rtcEpoch;
     if (ds3231Present) {
       applySystemTimeEpoch(lastSyncEpoch, true, F("DS3231 aktiv"), F("RTC von NTP korrigiert"));
