@@ -22,6 +22,7 @@
 #include <Adafruit_VEML7700.h>
 #include <Adafruit_BME680.h>
 #include <LittleFS.h>
+#include "esp_sntp.h"
 
 extern "C" {
   #include "lwip/dns.h"
@@ -37,6 +38,31 @@ extern "C" {
 #define MAX_DEVICES   24
 MD_MAX72XX mx(HARDWARE_TYPE, DISPLAY_DATA_PIN, DISPLAY_CLK_PIN, DISPLAY_CS_PIN, MAX_DEVICES);
 
+#include "display.h"
+
+static inline void write2Digits(char* out, uint8_t value) {
+  value %= 100;
+  out[0] = (char)('0' + value / 10);
+  out[1] = (char)('0' + value % 10);
+}
+
+static inline void write4Digits(char* out, uint16_t value) {
+  value %= 10000;
+  out[0] = (char)('0' + (value / 1000) % 10);
+  out[1] = (char)('0' + (value / 100) % 10);
+  out[2] = (char)('0' + (value / 10) % 10);
+  out[3] = (char)('0' + value % 10);
+}
+
+static inline void formatDateDmy(char* out, uint8_t day, uint8_t month, uint16_t year) {
+  write2Digits(out, day);
+  out[2] = '.';
+  write2Digits(out + 3, month);
+  out[5] = '.';
+  write4Digits(out + 6, year);
+  out[10] = '\0';
+}
+
 #include "config.h"
 #include "version_generated.h"
 
@@ -49,13 +75,6 @@ Config     cfg;
 WiFiManager wifiMgr;
 Adafruit_VEML7700 veml;
 Adafruit_BME680 bme;
-
-// ============================================================
-// NTP-Sync-Protokoll (Ringpuffer)
-// ============================================================
-static NtpLogEntry ntpLog[NTP_LOG_ENTRIES];
-static uint8_t     ntpLogHead = 0;
-static uint8_t     ntpLogCount = 0;
 
 // ============================================================
 // Status-Variablen
@@ -345,6 +364,24 @@ static void setupLightSensor() {
   }
 }
 
+static void timeSyncCallback(struct timeval *tv) {
+  time_t now = tv->tv_sec;
+  if (now > 1700000000UL) {
+    rtcSetTimeFromEpoch(now);
+    lastSyncEpoch = now;
+    lastRtcSyncMs = millis();
+    
+    const char* server = sntp_getservername(0);
+    activeNtp = server ? String(server) : cfg.ntp1;
+    
+    setTimeSource(F("NTP aktiv"), activeNtp);
+    // Display-Cache invalidieren
+    lastDispTime[0] = '\0';
+    lastDispDate[0] = '\0';
+    lastDispWeekday[0] = '\0';
+  }
+}
+
 static bool setupRtcTime() {
   if (!ds3231Present) {
     ds3231TimeValid = false;
@@ -361,24 +398,13 @@ static bool setupRtcTime() {
 
   ds3231TimeValid = true;
   lastRtcSyncMs = millis();
-  setTimeSource(F("DS3231 aktiv"), F("RTC hat Zeit geliefert"));
+  setTimeSource(F("DS3231 aktiv"), F("RTC beim Booten gelesen"));
+
+  // ESP32 Systemzeit initialisieren
+  struct timeval tv = { .tv_sec = rtcEpoch, .tv_usec = 0 };
+  settimeofday(&tv, NULL);
+
   return true;
-}
-
-static void refreshSystemTimeFromRtc(bool force = false) {
-  if (!ds3231Present || !ds3231TimeValid) return;
-
-  unsigned long nowMs = millis();
-  if (!force && nowMs - lastRtcSyncMs < 300000UL) return;
-
-  time_t rtcEpoch = 0;
-  if (!rtcEpochToTime(rtcEpoch)) {
-    ds3231TimeValid = false;
-    setTimeSource(F("keine"), F("DS3231 Zeit nicht lesbar"));
-    return;
-  }
-  lastRtcSyncMs = nowMs;
-  setTimeSource(F("DS3231 aktiv"), F("RTC ist Zeitquelle"));
 }
 
 static void retryLightSensorIfNeeded() {
@@ -390,321 +416,6 @@ static void retryLightSensorIfNeeded() {
     return;
   }
   setupLightSensor();
-}
-
-// ============================================================
-// Software-PWM via SHUTDOWN-Register
-// Laufzeitgesteuert im Hauptloop, damit kein asynchroner Callback
-// mitten in Display-Zeichnungen auf den MAX7219 eingreift.
-// ============================================================
-static bool   g_pwmDark = false;
-static uint32_t g_pwmNextMs = 0;
-
-static inline void pwmApply(bool dark) {
-  g_pwmDark = dark;
-  mx.control(MD_MAX72XX::SHUTDOWN, dark ? MD_MAX72XX::ON : MD_MAX72XX::OFF);
-}
-
-static void pwmStop() {
-  g_pwmNextMs = 0;
-  pwmApply(false);  // Display an
-}
-
-static void pwmStart() {
-  if (cfg.pwm_duty >= 10) {
-    pwmStop();
-    return;
-  }
-  pwmApply(false);  // mit Hellphase starten
-  g_pwmNextMs = millis() + (20 - (uint32_t)cfg.pwm_duty * 2);
-}
-
-static void pwmService() {
-  if (cfg.pwm_duty >= 10 || !g_pwmNextMs) return;
-
-  uint32_t now = millis();
-  while ((int32_t)(now - g_pwmNextMs) >= 0) {
-    if (g_pwmDark) {
-      pwmApply(false);
-      g_pwmNextMs += 20 - (uint32_t)cfg.pwm_duty * 2;
-    } else {
-      pwmApply(true);
-      g_pwmNextMs += (uint32_t)cfg.pwm_duty * 2;
-    }
-  }
-}
-
-static inline uint16_t effectiveNtpIntervalMin() {
-  return (cfg.ntp_interval_min == 0) ? 15 : cfg.ntp_interval_min;
-}
-
-static uint32_t nextSyncInSec() {
-  if (WiFi.status() != WL_CONNECTED) return 0;
-  uint32_t intervalMs = (uint32_t)effectiveNtpIntervalMin() * 60000UL;
-  if (!lastNtpProbeMs) return intervalMs / 1000UL;
-  uint32_t el = millis() - lastNtpProbeMs;
-  return (el >= intervalMs) ? 0 : (intervalMs - el) / 1000UL;
-}
-
-static bool dnsReadyForNtp() {
-  return WiFi.status() == WL_CONNECTED && WiFi.dnsIP(0) != (IPAddress)0U;
-}
-
-// ============================================================
-// lwIP DNS-Auflösung (zuverlässig, für Diagnose)
-// ============================================================
-struct DnsWaitState {
-  volatile bool done, ok;
-  ip_addr_t addr;
-};
-
-static void dnsCb(const char*, const ip_addr_t* ipaddr, void* arg) {
-  DnsWaitState* st = (DnsWaitState*)arg;
-  if (!st) return;
-  if (ipaddr) { st->addr = *ipaddr; st->ok = true; }
-  else        { st->ok = false; }
-  st->done = true;
-}
-
-static bool dnsResolveA_lwip(const String& host, IPAddress& outIp,
-                              String& dbg, uint32_t timeoutMs)
-{
-  outIp = (IPAddress)0U;
-  if (!host.length())                    { dbg = F("lwip:LEER");    return false; }
-  if (WiFi.status() != WL_CONNECTED)    { dbg = F("lwip:KEIN_WLAN"); return false; }
-
-  DnsWaitState st { false, false, {} };
-  ip_addr_t addr;
-  err_t e = dns_gethostbyname(host.c_str(), &addr, dnsCb, &st);
-
-  if (e == ERR_OK) {
-    st.addr = addr; st.ok = st.done = true;
-  } else if (e == ERR_INPROGRESS) {
-    uint32_t t0 = millis();
-    while (!st.done && (millis() - t0 < timeoutMs)) { delay(1); yield(); }
-    if (!st.done) { dbg = F("lwip:TIMEOUT"); return false; }
-    if (!st.ok)   { dbg = F("lwip:FAIL");    return false; }
-  } else {
-    dbg = String(F("lwip:ERR=")) + (int)e;
-    return false;
-  }
-
-  const ip4_addr_t* a4 = ip_2_ip4(&st.addr);
-  outIp = IPAddress(ip4_addr1(a4), ip4_addr2(a4), ip4_addr3(a4), ip4_addr4(a4));
-  dbg   = String(F("lwip:OK ip=")) + outIp.toString();
-  return true;
-}
-
-// ============================================================
-// IP-Cache (3 Einträge)
-// ============================================================
-struct HostIpCache { String host; IPAddress ip; uint32_t ms; bool valid; };
-static HostIpCache g_ipcache[3];
-
-static uint8_t cacheSlotFor(const String& host) {
-  for (uint8_t i = 0; i < 3; i++)
-    if (g_ipcache[i].valid && g_ipcache[i].host == host) return i;
-  for (uint8_t i = 0; i < 3; i++)
-    if (!g_ipcache[i].valid) return i;
-  return 0;
-}
-
-static void cachePut(const String& host, const IPAddress& ip) {
-  uint8_t idx = cacheSlotFor(host);
-  g_ipcache[idx] = { host, ip, millis(), true };
-}
-
-static bool cacheGet(const String& host, IPAddress& ip, uint32_t& ageSec) {
-  for (uint8_t i = 0; i < 3; i++) {
-    if (g_ipcache[i].valid && g_ipcache[i].host == host) {
-      ip = g_ipcache[i].ip;
-      ageSec = (millis() - g_ipcache[i].ms) / 1000UL;
-      return true;
-    }
-  }
-  return false;
-}
-
-static void ntpLogAdd(uint32_t epoch, const String& host, bool ok, const String& detail) {
-  ntpLog[ntpLogHead].timestampEpoch = epoch;
-  strlcpy(ntpLog[ntpLogHead].host, host.c_str(), NTP_LOG_HOST_LEN);
-  ntpLog[ntpLogHead].success = ok;
-  strlcpy(ntpLog[ntpLogHead].detail, detail.c_str(), NTP_LOG_DETAIL_LEN);
-  ntpLogHead  = (ntpLogHead + 1) % NTP_LOG_ENTRIES;
-  if (ntpLogCount < NTP_LOG_ENTRIES) ntpLogCount++;
-}
-
-#include "display.h"
-
-static inline void write2Digits(char* out, uint8_t value) {
-  value %= 100;
-  out[0] = (char)('0' + value / 10);
-  out[1] = (char)('0' + value % 10);
-}
-
-static inline void write4Digits(char* out, uint16_t value) {
-  value %= 10000;
-  out[0] = (char)('0' + (value / 1000) % 10);
-  out[1] = (char)('0' + (value / 100) % 10);
-  out[2] = (char)('0' + (value / 10) % 10);
-  out[3] = (char)('0' + value % 10);
-}
-
-static inline void formatDateDmy(char* out, uint8_t day, uint8_t month, uint16_t year) {
-  write2Digits(out, day);
-  out[2] = '.';
-  write2Digits(out + 3, month);
-  out[5] = '.';
-  write4Digits(out + 6, year);
-  out[10] = '\0';
-}
-
-// ============================================================
-// NTP Probe
-// ============================================================
-static bool ntpProbeOnce(const String& host, uint16_t timeoutMs, String* detail = nullptr, uint32_t* txSecOut = nullptr, uint32_t* extraMsOut = nullptr) {
-  if (!host.length())                 { if(detail) *detail=F("EMPTY_HOST"); return false; }
-  if (WiFi.status() != WL_CONNECTED) { if(detail) *detail=F("NO_WIFI");    return false; }
-
-  IPAddress ip;
-  bool resolved = false;
-  for (uint8_t attempt = 0; attempt < 3 && !resolved; attempt++) {
-    if (WiFi.hostByName(host.c_str(), ip)) resolved = true;
-    else { delay(80); yield(); }
-  }
-
-  String how;
-  if (resolved) {
-    cachePut(host, ip);
-    how = String(F("RESOLVED ip=")) + ip.toString();
-  } else {
-    IPAddress lastIp; uint32_t ageSec;
-    if (cacheGet(host, lastIp, ageSec)) {
-      ip  = lastIp;
-      how = String(F("CACHE ip=")) + ip.toString() + F(" age=") + ageSec + "s";
-    } else {
-      if (detail) *detail = String(F("RESOLVE_FAIL dns0="))
-                          + ipOrLabel(WiFi.dnsIP(0)) + F(" dns1=")
-                          + ipOrLabel(WiFi.dnsIP(1));
-      return false;
-    }
-  }
-
-  // UDP-Probe -----------------------------------------------
-  static uint16_t localPort = 0;
-  if (!localPort) localPort = NTP_UDP_PORT_BASE + (clockChipId() & 0x0FFF);
-
-  static WiFiUDP udp;
-  udp.stop();
-  // Bei begin()-Fehler: Port wechseln und nochmal versuchen
-  if (!udp.begin(localPort)) {
-    localPort = (localPort < 2500) ? localPort + 1 : NTP_UDP_PORT_BASE;
-    if (!udp.begin(localPort)) {
-      if (detail) *detail = how + F(" UDP_BEGIN_FAIL port=") + localPort;
-      return false;
-    }
-  }
-
-  // Rx-Buffer leeren
-  while (udp.parsePacket() > 0) { uint8_t d[64]; udp.read(d, 64); }
-
-  uint8_t pkt[48] = {};
-  pkt[0] = 0x1B;
-
-  uint32_t t1 = millis();  // Startzeit vor Senden
-  if (!udp.beginPacket(ip, 123)) { udp.stop(); if(detail) *detail=how+F(" BEGINPKT_FAIL"); return false; }
-  if (udp.write(pkt, 48) != 48) { udp.stop(); if(detail) *detail=how+F(" WRITE_FAIL");    return false; }
-  if (!udp.endPacket())          { udp.stop(); if(detail) *detail=how+F(" ENDPKT_FAIL");   return false; }
-
-  uint32_t start = millis();
-  while (millis() - start < timeoutMs) {
-    int len = udp.parsePacket();
-    if (len > 0) {
-      uint32_t t4 = millis();  // Empfangszeitpunkt
-      uint8_t buf[48]; int n = udp.read(buf, min(len, 48));
-      udp.stop();
-      if (n < 48)       { if(detail) *detail=how+F(" SHORT=") +n; return false; }
-      if ((buf[0]&7)!=4){ if(detail) *detail=how+F(" BAD_MODE=")+(buf[0]&7); return false; }
-      uint32_t txSec = ((uint32_t)buf[40]<<24)|((uint32_t)buf[41]<<16)|
-                       ((uint32_t)buf[42]<<8 )|buf[43];
-      uint32_t txFrac= ((uint32_t)buf[44]<<24)|((uint32_t)buf[45]<<16)|
-                       ((uint32_t)buf[46]<<8 )|buf[47];
-      if (!txSec)        { if(detail) *detail=how+F(" BAD_TS"); return false; }
-      // Subsekunden-Anteil ms + halbe Round-Trip-Zeit → auf ganze Sekunden runden
-      uint32_t extraMs = (uint32_t)(((uint64_t)txFrac * 1000ULL) >> 32) + (t4 - t1) / 2;
-      if (extraMsOut) *extraMsOut = extraMs;
-      txSec += (extraMs + 500) / 1000;
-      if (txSecOut) *txSecOut = txSec;
-      if (detail) *detail = how + F(" OK txSec=") + txSec + F(" extraMs=") + extraMs;
-      return true;
-    }
-    delay(10); yield();
-  }
-  udp.stop();
-  if (detail) *detail = how + F(" TIMEOUT");
-  return false;
-}
-
-// NTP-Probe direkt per IP (kein DNS) — für Test & Fallback
-static bool ntpProbeByIp(const IPAddress& ip, uint16_t timeoutMs, String* detail, uint32_t* txSecOut = nullptr, uint32_t* extraMsOut = nullptr) {
-  if (ip == (IPAddress)0U) { if (detail) *detail = F("IP=0 ungueltig"); return false; }
-  if (WiFi.status() != WL_CONNECTED) { if (detail) *detail = F("NO_WIFI"); return false; }
-
-  static WiFiUDP udpDirect;
-  udpDirect.stop();
-  static uint16_t directPort = 2389;
-  if (!udpDirect.begin(directPort)) {
-    directPort = (directPort < 2450) ? directPort + 1 : 2389;
-    if (!udpDirect.begin(directPort)) {
-      if (detail) *detail = F("UDP_BEGIN_FAIL");
-      return false;
-    }
-  }
-
-  // Rx-Buffer leeren
-  while (udpDirect.parsePacket() > 0) { uint8_t d[64]; udpDirect.read(d, 64); }
-
-  uint8_t pkt[48] = {};
-  pkt[0] = 0x1B;
-
-  uint32_t t1 = millis();
-  if (!udpDirect.beginPacket(ip, 123)) { udpDirect.stop(); if (detail) *detail=F("BEGINPKT_FAIL"); return false; }
-  if (udpDirect.write(pkt, 48) != 48)  { udpDirect.stop(); if (detail) *detail=F("WRITE_FAIL");    return false; }
-  if (!udpDirect.endPacket())           { udpDirect.stop(); if (detail) *detail=F("ENDPKT_FAIL");   return false; }
-
-  uint32_t start = millis();
-  while (millis() - start < timeoutMs) {
-    int len = udpDirect.parsePacket();
-    if (len > 0) {
-      uint32_t t4 = millis();
-      uint8_t buf[48]; int n = udpDirect.read(buf, min(len, 48));
-      udpDirect.stop();
-      if (n < 48)        { if (detail) *detail=String(F("SHORT="))+n; return false; }
-      if ((buf[0]&7)!=4) { if (detail) *detail=String(F("BAD_MODE="))+(buf[0]&7); return false; }
-      uint32_t txSec = ((uint32_t)buf[40]<<24)|((uint32_t)buf[41]<<16)|
-                       ((uint32_t)buf[42]<<8)|buf[43];
-      uint32_t txFrac= ((uint32_t)buf[44]<<24)|((uint32_t)buf[45]<<16)|
-                       ((uint32_t)buf[46]<<8)|buf[47];
-      if (!txSec) { if (detail) *detail=F("BAD_TS=0"); return false; }
-      uint32_t extraMs = (uint32_t)(((uint64_t)txFrac * 1000ULL) >> 32) + (t4 - t1) / 2;
-      if (extraMsOut) *extraMsOut = extraMs;
-      txSec += (extraMs + 500) / 1000;
-      if (txSecOut) *txSecOut = txSec;
-      if (detail) *detail = String(F("OK txSec=")) + txSec + F(" ip=") + ip.toString() + F(" extraMs=") + extraMs;
-      return true;
-    }
-    delay(10); yield();
-  }
-  udpDirect.stop();
-  if (detail) *detail = String(F("TIMEOUT ip=")) + ip.toString();
-  return false;
-}
-
-static String chooseBestNtp() {
-  if (ntpProbeOnce(cfg.ntp1, NTP_PROBE_TIMEOUT_MS)) return cfg.ntp1;
-  if (ntpProbeOnce(cfg.ntp2, NTP_PROBE_TIMEOUT_MS)) return cfg.ntp2;
-  if (ntpProbeOnce(cfg.ntp3, NTP_PROBE_TIMEOUT_MS)) return cfg.ntp3;
-  return "";
 }
 
 // ============================================================
@@ -738,38 +449,10 @@ static String posixFromConfig() {
        + ',' + rule(sm,sw,sd,sh) + ',' + rule(em,ew,ed,eh);
 }
 
-static void applyTimeConfig(bool force) {
-  if (WiFi.status() != WL_CONNECTED) return;
-
-  String best = chooseBestNtp();
-  lastNtpProbeMs = millis();
-
-  String detail;
-  uint32_t txSec = 0, extraMs = 0;
-  ntpProbeOnce(best.length() ? best : cfg.ntp1, NTP_PROBE_TIMEOUT_MS, &detail, &txSec, &extraMs);
-  if (txSec) {
-    uint32_t rounding = (extraMs + 500) / 1000;
-    uint32_t txSecRaw = txSec - rounding;
-    uint64_t nowMs = (uint64_t)(txSecRaw - 2208988800UL) * 1000ULL + extraMs;
-    uint64_t targetMs = ((nowMs + 999) / 1000) * 1000;
-    uint32_t waitMs = (targetMs > nowMs && targetMs - nowMs <= 1500) ? (uint32_t)(targetMs - nowMs) : 0;
-    if (waitMs) delay(waitMs);
-    time_t rtcEpoch = (time_t)(targetMs / 1000);
-    lastSyncEpoch = rtcEpoch;
-    if (ds3231Present) {
-      applySystemTimeEpoch(lastSyncEpoch, true, F("DS3231 aktiv"), F("RTC von NTP korrigiert"));
-    } else {
-      setTimeSource(F("NTP aktiv"), best.length() ? best : cfg.ntp1);
-    }
-  }
-  ntpLogAdd(lastSyncEpoch, best.length() ? best : cfg.ntp1, best.length() > 0, detail);
-
+static void applyTimezone() {
   String tz = posixFromConfig();
   setenv("TZ", tz.c_str(), 1);
   tzset();
-
-  if (!force && best == activeNtp) return;
-  activeNtp = best;
 }
 
 // ============================================================
@@ -793,17 +476,49 @@ static void applyIpAndDnsBeforeConnect() {
               has2 ? d2 : (IPAddress)0U);
 }
 
+static void onWiFiEvent(WiFiEvent_t event) {
+  switch (event) {
+    case ARDUINO_EVENT_WIFI_STA_GOT_IP:
+      if (wifiMgr.state != ClockWiFiState::CONNECTED) {
+        wifiMgr.state = ClockWiFiState::CONNECTED;
+        wifiMgr.reset();
+        MDNS.begin("dottie");
+        sntp_set_time_sync_notification_cb(timeSyncCallback);
+        configTzTime(posixFromConfig().c_str(), cfg.ntp1.c_str(), cfg.ntp2.c_str(), cfg.ntp3.c_str());
+        // Force redraw
+        lastDispTime[0] = '\0';
+      }
+      break;
+    case ARDUINO_EVENT_WIFI_STA_DISCONNECTED:
+      if (wifiMgr.state == ClockWiFiState::CONNECTED) {
+        wifiMgr.state = ClockWiFiState::DISCONNECTED;
+        wifiMgr.lastCheckMs = millis();
+        // Keine blockierenden Delays hier in der ISR/Event-Task!
+        // Wir setzen nur den State, der Loop reagiert dann.
+      }
+      break;
+    default:
+      break;
+  }
+}
+
 // ============================================================
 // WiFi Connect (STA)
 // ============================================================
-static bool connectWiFiSTA(bool showUi = true) {
+static void startWiFiSTA() {
   WiFi.mode(WIFI_STA);
   WiFi.persistent(false);
   WiFi.disconnect(true);
-  delay(100);
+  delay(10);
   clockDisableWiFiSleep();
   applyIpAndDnsBeforeConnect();
   WiFi.begin(cfg.sta_ssid.c_str(), cfg.sta_pass.c_str());
+}
+
+static bool connectWiFiSTA(bool showUi = true) {
+  startWiFiSTA();
+
+  if (!showUi) return true; // Asynchron im Hintergrund
 
   uint32_t startMs = millis(), lastBlink = 0;
   bool visible = true;
@@ -812,7 +527,7 @@ static bool connectWiFiSTA(bool showUi = true) {
     uint32_t elapsed = (millis() - startMs) / 1000;
     if (elapsed >= cfg.wifi_timeout_sec) break;
     uint16_t left = cfg.wifi_timeout_sec - (uint16_t)elapsed;
-    if (showUi && millis() - lastBlink >= 500) {
+    if (millis() - lastBlink >= 500) {
       lastBlink = millis(); visible = !visible;
       showInitWifi(left, visible);
     }
@@ -820,18 +535,13 @@ static bool connectWiFiSTA(bool showUi = true) {
   }
 
   if (WiFi.status() == WL_CONNECTED) {
-    // Warten bis DNS verfügbar
-    uint32_t tDns = millis();
-    while (WiFi.dnsIP(0) == (IPAddress)0U && millis() - tDns < 2000) { delay(50); yield(); }
     mx.clear();
     return true;
   }
 
-  if (showUi) {
-    bool vis = true;
-    for (uint8_t i = 0; i < 5; i++) {
-      showWifiNotFound(vis); vis = !vis; delay(250); yield();
-    }
+  bool vis = true;
+  for (uint8_t i = 0; i < 5; i++) {
+    showWifiNotFound(vis); vis = !vis; delay(250); yield();
   }
   mx.clear();
   return false;
@@ -890,7 +600,6 @@ static void setupOTA() {
     ArduinoOTA.setPassword(cfg.ota_password.c_str());
 
   ArduinoOTA.onStart([]() {
-    pwmStop();  // Dimmen anhalten, Display einschalten
     drawTopCentered(F("OTA"));
     drawMiddleText5x7Centered(F("UPDATE"));
     clearRow(MAP_BOTTOM);
@@ -927,14 +636,9 @@ static void setupOTA() {
 // Web-Handler nur Flags, die der Haupt-Loop abarbeitet.
 // ============================================================
 static volatile bool g_spiBrightnessForce = false;
-static volatile bool g_spiPwmChanged = false;
 
 void requestBrightnessFromLoop() {
   g_spiBrightnessForce = true;
-}
-
-void requestPwmFromLoop() {
-  g_spiPwmChanged = true;
 }
 
 #include "ClockWebUi.h"
@@ -966,8 +670,8 @@ static const char* weekdayLabelDe(uint8_t wday, bool mixedCase) {
 }
 
 static bool getLocalStrings(char timeStr[9], char dateStr[11], String& weekdayStr) {
-  time_t now = 0;
-  if (!rtcEpochToTime(now)) return false;
+  time_t now = time(nullptr);
+  if (now < 1700000000UL) return false;
   struct tm tmNow;
   localtime_r(&now, &tmNow);
 
@@ -1079,52 +783,25 @@ static bool handleRuntimeResetHold() {
 // WiFi-Reconnect (State Machine)
 // ============================================================
 static void handleWiFiReconnect() {
-  if (WiFi.getMode() & WIFI_AP) return; // Im AP-Modus nicht reconnecten
+  if (WiFi.getMode() & WIFI_AP) return;
   if (!cfg.sta_ssid.length()) return;
 
-  bool connected = (WiFi.status() == WL_CONNECTED);
+  static ClockWiFiState lastKnownState = ClockWiFiState::CONNECTED;
+  ClockWiFiState currentState = wifiMgr.state;
 
-  if (connected) {
-    if (wifiMgr.state != ClockWiFiState::CONNECTED) {
-      wifiMgr.state = ClockWiFiState::CONNECTED;
-      wifiMgr.reset();
-      MDNS.begin("dottie");
-      applyTimeConfig(true);
-    }
-    return;
-  }
+  if (currentState == lastKnownState) return;
 
-  // Getrennt — Reconnect planen
-  if (wifiMgr.state == ClockWiFiState::CONNECTED) {
-    wifiMgr.state = ClockWiFiState::DISCONNECTED;
-    wifiMgr.lastCheckMs = millis();
-    // Kurze Display-Anzeige
+  if (currentState == ClockWiFiState::DISCONNECTED) {
     drawTopCentered(F("WLAN?"));
     drawMiddleText5x7Centered(F("LOST"));
-    lastDispTime[0] = '\0';  // Redraw erzwingen nach LOST-Anzeige
+    lastDispTime[0] = '\0';
     lastDispDate[0] = '\0';
-    delay(800);
-  }
-
-  uint32_t waitMs = (uint32_t)wifiMgr.reconnectIntervalS * 1000UL;
-  if (millis() - wifiMgr.lastCheckMs < waitMs) return;
-
-  wifiMgr.lastCheckMs = millis();
-  wifiMgr.state = ClockWiFiState::RECONNECTING;
-
-  bool ok = connectWiFiSTA(false); // ohne UI-Blink
-  if (ok) {
-    wifiMgr.state = ClockWiFiState::CONNECTED;
-    wifiMgr.reset();
-  } else {
-    wifiMgr.state = ClockWiFiState::DISCONNECTED;
-    wifiMgr.backoff();
-    // Display: nächster Versuch in X Sekunden
-    drawTopCentered(F("RETRY"));
-    drawMiddleText5x7Centered(String(wifiMgr.reconnectIntervalS) + 'S');
-    delay(600);
+  } else if (currentState == ClockWiFiState::CONNECTED) {
     mx.clear();
+    lastDispTime[0] = '\0';
   }
+
+  lastKnownState = currentState;
 }
 
 // ============================================================
@@ -1133,6 +810,7 @@ static void handleWiFiReconnect() {
 void setup() {
   bootMs = millis();
   pinMode(FACTORY_RESET_PIN, INPUT);
+  WiFi.onEvent(onWiFiEvent);
 
   mx.begin();
   mx.control(MD_MAX72XX::TEST, MD_MAX72XX::OFF);
@@ -1160,7 +838,6 @@ void setup() {
   }
   applyConfiguredBrightness();
   updateBrightnessFromLux(true);
-  pwmStart();
 
   bool haveCreds = cfg.sta_ssid.length() > 0;
 
@@ -1172,7 +849,8 @@ void setup() {
 #if defined(ARDUINO_ARCH_ESP32)
     startWebServerTask();
 #endif
-    applyTimeConfig(true);
+    sntp_set_time_sync_notification_cb(timeSyncCallback);
+    configTzTime(posixFromConfig().c_str(), cfg.ntp1.c_str(), cfg.ntp2.c_str(), cfg.ntp3.c_str());
     showTopMarquee(String(F("IP:")) + WiFi.localIP().toString(), cfg.ip_show_sec);
   } else {
     if (haveCreds) {
@@ -1215,41 +893,14 @@ void loop() {
   // ③ mDNS verarbeiten
   clockMdnsUpdate();
 
-  // ④ Asynchronen NTP-Test ausführen (muss in loop() sein, nicht im Web-Handler)
-  runPendingNtpTest();
-
   // ⑤ WiFi-Reconnect State Machine
   handleWiFiReconnect();
-
-  // ⑥ NTP-Intervall
-  if (WiFi.status() == WL_CONNECTED) {
-    uint32_t intervalMs = (uint32_t)effectiveNtpIntervalMin() * 60000UL;
-    if (!lastNtpProbeMs || millis() - lastNtpProbeMs > intervalMs)
-      applyTimeConfig(false);
-  }
-
-  // Solange die RTC noch keine gueltige Zeit liefert, deutlich schneller neu versuchen.
-  if (!ds3231TimeValid && dnsReadyForNtp()) {
-    static uint32_t lastInvalidNtpMs = 0;
-    if (!lastInvalidNtpMs || millis() - lastInvalidNtpMs > 10000UL) {
-      lastInvalidNtpMs = millis();
-      applyTimeConfig(true);
-    }
-  }
-
-  // RTC-Zeitbasis verifizieren
-  refreshSystemTimeFromRtc();
 
   // ⑥b Umgebungslicht -> Displayhelligkeit
   retryLightSensorIfNeeded();
   if (g_spiBrightnessForce) {
     g_spiBrightnessForce = false;
     updateBrightnessFromLux(true);
-  }
-  if (g_spiPwmChanged) {
-    g_spiPwmChanged = false;
-    if (cfg.pwm_duty >= 10) pwmStop();
-    else pwmStart();
   }
   updateBrightnessFromLux();
 
@@ -1273,7 +924,7 @@ void loop() {
   char* lastWeekday = lastDispWeekday;
   static uint32_t lastMs   = 0;
 
-  if (millis() - lastMs < 50) { pwmService(); delay(0); return; }
+  if (millis() - lastMs < 50) return;
   lastMs = millis();
 
   char t[9], d[11];
@@ -1311,5 +962,4 @@ void loop() {
     lastWeekday[sizeof(lastDispWeekday) - 1] = '\0';
     drawBottomTextU8g2Centered(wd);
   }
-  pwmService();
 }

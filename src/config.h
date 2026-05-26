@@ -66,7 +66,6 @@ struct Config {
   uint16_t wifi_timeout_sec = 30;
   uint16_t ip_show_sec      = 3;
   uint8_t  brightness       = 1;  // 0..15
-  uint8_t  pwm_duty         = 10; // 1..10 (10 = kein PWM, 1 = 10% Einschaltzeit)
   bool     auto_brightness  = false;
   bool     scroll_enabled   = true; // Scroll-Effekt auf Ziffern
   bool     dark_mode        = false;
@@ -181,7 +180,6 @@ static bool loadConfig() {
     CFG_INT("wifi_timeout_sec", wifi_timeout_sec, uint16_t)
     CFG_INT("ip_show_sec",      ip_show_sec,      uint16_t)
     CFG_INT("brightness",       brightness,       uint8_t)
-    CFG_INT("pwm_duty",         pwm_duty,         uint8_t)
     CFG_INT("bottom_font",      bottom_font,      uint8_t)
     CFG_BOOL("auto_brightness", auto_brightness)
     CFG_BOOL("scroll_enabled",  scroll_enabled)
@@ -196,7 +194,6 @@ static bool loadConfig() {
   }
   f.close();
   if (cfg.brightness > 15) cfg.brightness = 15;
-  if (cfg.pwm_duty < 1 || cfg.pwm_duty > 10) cfg.pwm_duty = 10; // 10 = aus, 1-5 = aktive PWM
   return true;
 }
 
@@ -229,7 +226,6 @@ static bool saveConfig() {
   W("date_fmt",         cfg.date_fmt);
   W("ip_show_sec",      cfg.ip_show_sec);
   W("brightness",       cfg.brightness);
-  W("pwm_duty",         cfg.pwm_duty);
   W("bottom_font",      cfg.bottom_font);
   W("auto_brightness",  cfg.auto_brightness ? "1" : "0");
   W("scroll_enabled",   cfg.scroll_enabled ? 1 : 0);

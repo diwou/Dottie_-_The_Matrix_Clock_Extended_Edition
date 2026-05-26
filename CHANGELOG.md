@@ -11,6 +11,25 @@ Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1.0.0
 ## [Unreleased]
 
 ### Neu
+- **Architektur-Refactor:** Umstellung auf asynchrones SNTP und event-basiertes WLAN für maximale Systemstabilität auf dem ESP32-S3.
+- Native Unterstützung der ESP32-Systemzeit (`time.h`): Die interne Uhr wird beim Booten aus dem DS3231 initialisiert und danach autonom per SNTP synchronisiert.
+- SNTP-Synchronisations-Callback: Der DS3231 RTC-Baustein wird nun automatisch im Hintergrund aktualisiert, sobald eine NTP-Synchronisation erfolgt.
+
+### Geändert
+- **WLAN-Handling:** Die blockierenden Verbindungs-Loops wurden durch asynchrone WiFi-Events ersetzt. Das Display friert bei Verbindungsabbrüchen oder Reconnects nicht mehr ein.
+- **Effizienz-Optimierung:** Die Abfrage der Uhrzeit erfolgt nun über die interne Systemzeit statt über sekündliche I2C-Abfragen des DS3231. Dies entlastet den I2C-Bus und reduziert Latenzen im Haupt-Loop.
+- **Loop-Bereinigung:** Entfernung aller signifikanten `delay()`-Aufrufe und blockierenden Netzwerk-Routinen im Haupt-Loop zur Vermeidung von Watchdog-Triggern (WDT).
+
+### Entfernt
+- **Software-PWM:** Die jitter-anfällige Software-PWM-Lösung über das SHUTDOWN-Register wurde entfernt. Die Helligkeitssteuerung erfolgt nun ausschließlich über die native Hardware-Intensität des MAX7219 in Kombination mit dem Lichtsensor.
+- Manuelle UDP-NTP-Implementierung und DNS-Resolver-Logik zugunsten der robusten ESP32-Framework-Funktionen.
+- Veraltete Web-UI-Elemente für Software-PWM und manuellen NTP-Test.
+
+### Behoben
+- Flackern und Hänger des Displays während Netzwerkaktivitäten durch konsequente Trennung von Anzeige-Logik und Hintergrund-Aufgaben.
+- Watchdog-Resets bei schlechter WLAN-Verbindung durch Eliminierung blockierender Reconnect-Logik.
+
+### Neu (vorherige Änderungen)
 - `.gitattributes` mit `* text=auto` angelegt, um plattformübergreifend konsistente Zeilenenden sicherzustellen. (Ref: 1cc6d42)
 - Dritte Modulreihe (Wochentag) auf U8g2-Proportionalschrift umgestellt (ncenR08, helvR08, timR08, courR08, lubR08, helvB08 über Web-UI wählbar); Rendering erfolgt in einen Offscreen-Buffer, dann kopiert auf die MAX7219-Module via bestehendem `rowSet()`. (Ref: a5af151, ba83ac7)
 - Wochentagsanzeige: Umschaltung Großbuchstaben / gemischte Schreibweise im Webinterface ergänzt. (Ref: ba83ac7)

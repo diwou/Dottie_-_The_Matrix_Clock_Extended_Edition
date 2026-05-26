@@ -9,7 +9,6 @@ extern DNSServer        dnsServer;
 
 // Deferred SPI actions: web task must not call mx.*() directly.
 extern void requestBrightnessFromLoop();
-extern void requestPwmFromLoop();
 
 static bool firmwareUpdateOk = false;
 static String firmwareUpdateError;
@@ -309,36 +308,6 @@ static void handleRoot() {
           "setInterval(redrawClock,1000);"
           "setInterval(pollStatus,5000);"
           "pollStatus();"
-          "function updPwm(v){"
-          "var o=document.getElementById('pwm_out');"
-          "if(o)o.value=v*10+'%';"
-          "}"
-          "function ntpTest(i){"
-          "var box=document.getElementById('ntpTestResult');"
-          "var title=document.getElementById('ntpTestTitle');"
-          "var status=document.getElementById('ntpTestStatus');"
-          "var detail=document.getElementById('ntpTestDetail');"
-          "box.style.display='block';"
-          "title.textContent='NTP #'+i+' — Test läuft...';"
-          "status.innerHTML='<i>⏳ Bitte warten...</i>';"
-          "detail.textContent='';"
-          "fetch('/test?i='+i,{method:'POST'})"
-          ".then(function(){pollNtpResult(i,0);})"
-          ".catch(function(e){status.innerHTML='Fehler: '+e;});}"
-          "function pollNtpResult(i,tries){"
-          "if(tries>30){document.getElementById('ntpTestStatus').innerHTML='Timeout';return;}"
-          "fetch('/api/ntptest')"
-          ".then(function(r){return r.json();})"
-          ".then(function(d){"
-          "if(d.running){setTimeout(function(){pollNtpResult(i,tries+1);},500);return;}"
-          "var s2=document.getElementById('ntpTestStatus');"
-          "var d2=document.getElementById('ntpTestDetail');"
-          "var t2=document.getElementById('ntpTestTitle');"
-          "t2.textContent='NTP #'+i+' — Ergebnis';"
-          "var ok=d.result==='OK';"
-          "s2.innerHTML=ok?'<span style=\"color:#16a34a\">✓ Erfolgreich</span>':'<span style=\"color:#dc2626\">✗ Fehlgeschlagen</span>';"
-          "d2.textContent=d.host+'\\n'+d.detail;})"
-          ".catch(function(e){setTimeout(function(){pollNtpResult(i,tries+1);},500);});}"
           "</script>"
           ));
   chunk(String(F("</head><body")) + (cfg.dark_mode ? F(" class='theme-dark'") : F("")) + F(">"));
@@ -392,7 +361,7 @@ static void handleRoot() {
     chunk(String(F("<div class='stat'>🌐 <b>DNS:</b> ")) + ipOrLabel(WiFi.dnsIP(0))
         + F(" / ") + ipOrLabel(WiFi.dnsIP(1))
         + F(" &nbsp; <b>Aktiver NTP:</b> ") + htmlEscape(activeNtp.length() ? activeNtp : "(keiner)")
-        + F(" &nbsp; <b>Nächster Sync:</b> <span id='next_sync'>") + nextSyncInSec() + F("s</span>"
+        + F(" &nbsp; <b>Nächster Sync:</b> <span id='next_sync'>-</span>"
         "</div>"));
   }
 
@@ -408,38 +377,6 @@ static void handleRoot() {
         F("</span>") +
         (timeSourceDetail.length() ? String(F(" &nbsp; <b>Info:</b> ")) + htmlEscape(timeSourceDetail) : String("")) +
         F("</div>"));
-
-  // NTP-Log
-  if (ntpLogCount > 0) {
-    chunk(F("<h3 style='margin-top:16px'>NTP-Sync-Protokoll (letzte Einträge)</h3>"));
-    // Iteriere rückwärts (neueste zuerst)
-    for (int8_t i = 0; i < (int8_t)ntpLogCount; i++) {
-      int8_t idx = ((int8_t)ntpLogHead - 1 - i + NTP_LOG_ENTRIES) % NTP_LOG_ENTRIES;
-      const NtpLogEntry& e = ntpLog[idx];
-      char tbuf[20] = "--:--:--";
-      if (e.timestampEpoch > 0) {
-        struct tm tm_e;
-        localtime_r((const time_t*)&e.timestampEpoch, &tm_e);
-        strftime(tbuf, sizeof(tbuf), "%H:%M:%S", &tm_e);
-      }
-      chunk(String(F("<div class='mono'>")) +
-            tbuf + F(" | ") +
-            (e.success ? F("<span class='ok'>OK</span>") : F("<span class='fail'>FAIL</span>")) +
-            F(" | ") + htmlEscape(e.host) + F("\n") + htmlEscape(e.detail) +
-            F("</div>"));
-    }
-  }
-
-  // Letzter manueller Test
-  if (lastTestMs > 0) {
-    chunk(F("<h3 style='margin-top:16px'>Letzter manueller NTP-Test</h3>"));
-    chunk(String(F("<div class='stat'>")) +
-          F("<b>Host:</b> ") + htmlEscape(lastTestHost) +
-          F(" &nbsp; <b>Ergebnis:</b> <span class='") +
-          (lastTestResult == "OK" ? F("ok'>✓ OK") : F("fail'>✗ FAIL")) + F("</span>") +
-          F(" &nbsp; <b>vor:</b> ") + (millis() - lastTestMs) / 1000 + F("s</div>"));
-    chunk(String(F("<div class='mono'>")) + htmlEscape(lastTestDetail) + F("</div>"));
-  }
 
   chunk(F("</div>")); // panel status
 
@@ -486,18 +423,6 @@ static void handleRoot() {
   chunk(String(F("<label>Synchronisationsintervall (Minuten, 0=15)</label>"
                  "<input name='ntp_interval_min' type='number' min='0' max='1440' value='")) + cfg.ntp_interval_min + F("'>"));
 
-  if (!inAP) {
-    chunk(F("<h3>NTP-Test</h3>"));
-    chunk(F("<div class='row3'>"));
-    chunk(F("<div><button type='button' onclick='ntpTest(1)'>▶ NTP #1 testen</button></div>"));
-    chunk(F("<div><button type='button' onclick='ntpTest(2)'>▶ NTP #2 testen</button></div>"));
-    chunk(F("<div><button type='button' onclick='ntpTest(3)'>▶ NTP #3 testen</button></div>"));
-    chunk(F("</div>"));
-    chunk(F("<div id='ntpTestResult' style='display:none;margin-top:12px'>"
-            "<div class='stat'><b id='ntpTestTitle'>Test-Ergebnis</b>"
-            "<div id='ntpTestStatus' style='margin:4px 0'></div>"
-            "<div id='ntpTestDetail' class='mono'></div></div></div>"));
-  }
   chunk(F("</div>")); // panel ntp
 
   // ============================================================
@@ -627,19 +552,6 @@ static void handleRoot() {
         checked(cfg.auto_brightness) +
         F("><label>Helligkeit automatisch mit VEML7700 regeln</label></div>"));
   chunk(F("<p class='hint'>Wenn aktiv, folgt die Display-Helligkeit dem Umgebungslicht. Der manuelle Wert bleibt als Fallback erhalten.</p>"));
-  chunk(F("<h3>Software-Dimmen (PWM)</h3>"));
-  chunk(String(F("<label>Abdunklungsst&auml;rke (1=10% … 5=50% Abdunklung)</label>"
-                 "<input name='pwm_duty' type='range' min='1' max='5' value='")) +
-        constrain((int)cfg.pwm_duty, 1, 5) +
-        F("' oninput='updPwm(this.value)'>"
-          "<output id='pwm_out'>") +
-        (cfg.pwm_duty < 10 ? String(cfg.pwm_duty * 10) + "%" : "Aus") +
-        F("</output>"));
-  chunk(String(F("<div class='chk'><input type='checkbox' name='pwm_enabled' value='1'")) +
-        (cfg.pwm_duty < 10 ? " checked" : "") +
-        F("><label>Software-Dimmen aktivieren</label></div>"));
-  chunk(F("<p class='hint'>50 Hz PWM &uuml;ber SHUTDOWN-Register. Nur bei Hardware-Helligkeit 0 sinnvoll. "
-          "Ab 50% Abdunklung kann leichtes Flackern auftreten.</p>"));
   chunk(F("<h3>Anzeigeeffekt</h3>"));
   chunk(String(F("<div class='chk'><input type='checkbox' name='scroll_enabled' value='1'")) +
         checked(cfg.scroll_enabled) +
@@ -769,12 +681,6 @@ static void applyFormToConfig() {
     cfg.brightness = (uint8_t)b;
   }
   cfg.auto_brightness = server.hasArg(F("auto_brightness"));
-  if (!server.hasArg(F("pwm_enabled"))) {
-    cfg.pwm_duty = 10;
-  } else if (server.hasArg(F("pwm_duty"))) {
-    cfg.pwm_duty = (uint8_t)constrain(server.arg(F("pwm_duty")).toInt(), 1, 5);
-  }
-  requestPwmFromLoop();
 
   cfg.show_24h     = server.hasArg(F("show_24h"));
   cfg.show_seconds = server.hasArg(F("show_seconds"));
@@ -922,7 +828,8 @@ static void handleFirmwareUpdateUpload() {
 // ============================================================
 static void handleApply() {
   applyFormToConfig();
-  applyTimeConfig(true);
+  applyTimezone();
+  startWiFiSTA();
   server.sendHeader(F("Location"),F("/"));
   server.send(303);
 }
@@ -961,7 +868,7 @@ static void sendRebootPage() {
 
 static void handleApplyReboot()  {
   applyFormToConfig();
-  applyTimeConfig(true);
+  applyTimezone();
   sendRebootPage();
   delay(400);
   ESP.restart();
@@ -969,125 +876,11 @@ static void handleApplyReboot()  {
 static void handleReboot()       { sendRebootPage(); delay(400); ESP.restart(); }
 static void handleFactory()      { server.send(200,F("text/plain"),F("Factory Reset...")); delay(200); factoryReset(); }
 
-static void handleTest() {
-  if (!server.hasArg(F("i"))) { server.send(400, F("text/plain"), F("Fehlender Parameter i")); return; }
-  int i = server.arg(F("i")).toInt();
-  if (i < 1 || i > 3) { server.send(400, F("text/plain"), F("i muss 1, 2 oder 3 sein")); return; }
-
-  if (testRunning) {
-    server.send(200, F("application/json"), F("{status:running}"));
-    return;
-  }
-
-  pendingTestIndex = i;
-  testRunning      = true;
-  lastTestResult   = F("...");
-  lastTestDetail   = F("Test laeuft...");
-  lastTestHost     = (i==1) ? cfg.ntp1 : (i==2) ? cfg.ntp2 : cfg.ntp3;
-  lastTestMs       = millis();
-
-  // Sofort antworten — der eigentliche Test läuft in loop()
-  server.send(200, F("application/json"), F("{status:started}"));
-}
-
-// Wird aus loop() aufgerufen — außerhalb des Web-Handlers, DNS funktioniert hier
-static void runPendingNtpTest() {
-  if (pendingTestIndex < 0 || !testRunning) return;
-
-  int i = pendingTestIndex;
-  pendingTestIndex = -1;   // sofort zurücksetzen, damit nicht doppelt läuft
-
-  String host = (i==1) ? cfg.ntp1 : (i==2) ? cfg.ntp2 : cfg.ntp3;
-
-  // Schritt 1: DNS — hier in loop() funktioniert hostByName zuverlässig
-  IPAddress resolvedIp;
-  String resolveLog;
-  bool dnsOk = false;
-
-  // DNS: mehrere Versuche mit yield() dazwischen — hostByName braucht
-  // manchmal mehrere loop()-Iterationen bis der lwIP-Stack antwortet
-  for (uint8_t attempt = 0; attempt < 8 && !dnsOk; attempt++) {
-    // Zwischen Versuchen loop()-Zeit lassen damit lwIP arbeiten kann
-    for (uint8_t w = 0; w < 20; w++) { delay(10); yield(); }
-    if (WiFi.hostByName(host.c_str(), resolvedIp)) {
-      dnsOk = true;
-      resolveLog = String(F("hostByName:OK ip=")) + resolvedIp.toString()
-                 + F(" (Versuch ") + (attempt+1) + F(")");
-      cachePut(host, resolvedIp);
-    }
-  }
-
-  if (!dnsOk) {
-    // Fallback 1: lwIP direkt
-    IPAddress lwIp; String lwDbg;
-    if (dnsResolveA_lwip(host, lwIp, lwDbg, 4000)) {
-      resolvedIp = lwIp; dnsOk = true;
-      resolveLog = String(F("lwip:OK ip=")) + lwIp.toString();
-      cachePut(host, resolvedIp);
-    } else {
-      resolveLog = String(F("hostByName:FAIL | ")) + lwDbg;
-      // Fallback 2: Cache
-      uint32_t ageSec;
-      if (cacheGet(host, resolvedIp, ageSec)) {
-        dnsOk = true;
-        resolveLog += String(F(" | CACHE:OK ip=")) + resolvedIp.toString()
-                    + F(" age=") + ageSec + "s";
-      }
-    }
-  }
-
-  resolveLog += String(F("  [dns0=")) + ipOrLabel(WiFi.dnsIP(0)) + F("]");
-
-  // Schritt 2: NTP UDP-Probe
-  String probeDetail;
-  bool ok = false;
-  uint32_t txSec = 0;
-  if (dnsOk) {
-    ok = ntpProbeByIp(resolvedIp, NTP_PROBE_TIMEOUT_MS * 2, &probeDetail, &txSec);
-  } else {
-    probeDetail = F("DNS fehlgeschlagen");
-  }
-
-  if (ok && txSec) {
-    time_t rtcEpoch = (time_t)(txSec - 2208988800UL);
-    rtcSetTimeFromEpoch(rtcEpoch);
-    lastSyncEpoch = rtcEpoch;
-    setTimeSource(F("NTP aktiv"), host);
-  }
-
-  lastTestHost   = host;
-  lastTestResult = ok ? F("OK") : F("FAIL");
-  lastTestDetail = resolveLog + F("\nUDP: ") + probeDetail;
-  lastTestMs     = millis();
-  testRunning    = false;
-
-  time_t logEpoch = 0;
-  if (!rtcEpochToTime(logEpoch)) logEpoch = lastSyncEpoch;
-  ntpLogAdd(logEpoch, host, ok, lastTestDetail);
-}
-
-// Dummy — wird nicht mehr aufgerufen, aber der Compiler braucht die Signatur
-
 // ============================================================
 // Web-Setup
 // ============================================================
-static void handleApiNtpTest() {
-  // Build JSON manually - avoid String escape issues
-  String json = "{\"running\":";
-  json += testRunning ? "true" : "false";
-  json += ",\"host\":\"";
-  json += jsonEscape(lastTestHost);
-  json += "\",\"result\":\"";
-  json += jsonEscape(lastTestResult);
-  json += "\",\"detail\":\"";
-  json += jsonEscape(lastTestDetail);
-  json += "\"}";
-  server.sendHeader(F("Cache-Control"), F("no-cache"));
-  server.send(200, F("application/json"), json);
-}
-
 static void handleApiStatus() {
-  time_t now = 0;
+  time_t now = time(nullptr);
   time_t rtcNow = 0;
   char tbuf[20] = "--:--:--";
   char dbuf[14] = "--.--.----";
@@ -1097,7 +890,7 @@ static void handleApiStatus() {
   char rtcTimeIso[9] = "--:--:--";
   char lastSync[20] = "-";
   struct tm tm_l; memset(&tm_l, 0, sizeof(tm_l));
-  bool timeValid = rtcEpochToTime(now);
+  bool timeValid = (now > 1700000000UL);
   bool rtcPresent = ds3231Present;
   bool rtcValid = false;
   if (timeValid) {
@@ -1165,7 +958,7 @@ static void handleApiStatus() {
   json += String(F("\"last_ntp_sync\":\"")) + lastSync + F("\",");
   json += String(F("\"time_source\":\"")) + jsonEscape(timeSource) + F("\",");
   json += String(F("\"time_source_detail\":\"")) + jsonEscape(timeSourceDetail) + F("\",");
-  json += String(F("\"nextsync\":")) + nextSyncInSec() + F(",");
+  json += String(F("\"nextsync\":0,"));
   json += String(F("\"heap\":")) + ESP.getFreeHeap() + F(",");
   json += String(F("\"rssi\":")) + (WiFi.status()==WL_CONNECTED ? WiFi.RSSI() : 0);
   json += "}";
@@ -1208,10 +1001,7 @@ static void setupWeb() {
   server.on(F("/factory"),     HTTP_POST, handleFactory);
   server.on(F("/rtcset"),      HTTP_POST, handleRtcSet);
   server.on(F("/api/update"),  HTTP_POST, handleFirmwareUpdateDone, handleFirmwareUpdateUpload);
-  server.on(F("/test"),        HTTP_POST, handleTest);
-  server.on(F("/test"),        HTTP_GET,  handleTest);
   server.on(F("/api/status"),  HTTP_GET,  handleApiStatus);
-  server.on(F("/api/ntptest"), HTTP_GET,  handleApiNtpTest);
   server.on(F("/diag"),        HTTP_GET,  handleDiag);
   server.begin();
 }
