@@ -374,7 +374,7 @@ static void timeSyncCallback(struct timeval *tv) {
     const char* server = sntp_getservername(0);
     activeNtp = server ? String(server) : cfg.ntp1;
     
-    setTimeSource(F("NTP aktiv"), activeNtp);
+    setTimeSource(F("ESP32 (NTP)"), activeNtp);
     // Display-Cache invalidieren
     lastDispTime[0] = '\0';
     lastDispDate[0] = '\0';
@@ -385,20 +385,20 @@ static void timeSyncCallback(struct timeval *tv) {
 static bool setupRtcTime() {
   if (!ds3231Present) {
     ds3231TimeValid = false;
-    setTimeSource(F("keine"), F("DS3231 nicht gefunden"));
+    setTimeSource(F("ESP32 intern"), F("Kein DS3231 gefunden"));
     return false;
   }
 
   time_t rtcEpoch = 0;
   if (!rtcEpochToTime(rtcEpoch)) {
     ds3231TimeValid = false;
-    setTimeSource(F("keine"), F("DS3231 Zeit ungueltig"));
+    setTimeSource(F("ESP32 intern"), F("DS3231 Zeit ungültig"));
     return false;
   }
 
   ds3231TimeValid = true;
   lastRtcSyncMs = millis();
-  setTimeSource(F("DS3231 aktiv"), F("RTC beim Booten gelesen"));
+  setTimeSource(F("ESP32 (RTC)"), F("Initialisiert aus DS3231"));
 
   // ESP32 Systemzeit initialisieren
   struct timeval tv = { .tv_sec = rtcEpoch, .tv_usec = 0 };
