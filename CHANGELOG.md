@@ -11,23 +11,23 @@ Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1.0.0
 ## [Unreleased]
 
 ### Neu
-- **Architektur-Refactor:** Umstellung auf asynchrones SNTP und event-basiertes WLAN für maximale Systemstabilität auf dem ESP32-S3.
-- Native Unterstützung der ESP32-Systemzeit (`time.h`): Die interne Uhr wird beim Booten aus dem DS3231 initialisiert und danach autonom per SNTP synchronisiert.
-- SNTP-Synchronisations-Callback: Der DS3231 RTC-Baustein wird nun automatisch im Hintergrund aktualisiert, sobald eine NTP-Synchronisation erfolgt.
+- **Architektur-Refactor:** Umstellung auf asynchrones SNTP und event-basiertes WLAN für maximale Systemstabilität auf dem ESP32-S3. (Ref: 565d8c5)
+- Native Unterstützung der ESP32-Systemzeit (`time.h`): Die interne Uhr wird beim Booten aus dem DS3231 initialisiert und danach autonom per SNTP synchronisiert. (Ref: 565d8c5)
+- SNTP-Synchronisations-Callback: Der DS3231 RTC-Baustein wird nun automatisch im Hintergrund aktualisiert, sobald eine NTP-Synchronisation erfolgt. (Ref: 565d8c5)
 
 ### Geändert
-- **WLAN-Handling:** Die blockierenden Verbindungs-Loops wurden durch asynchrone WiFi-Events ersetzt. Das Display friert bei Verbindungsabbrüchen oder Reconnects nicht mehr ein.
-- **Effizienz-Optimierung:** Die Abfrage der Uhrzeit erfolgt nun über die interne Systemzeit statt über sekündliche I2C-Abfragen des DS3231. Dies entlastet den I2C-Bus und reduziert Latenzen im Haupt-Loop.
-- **Loop-Bereinigung:** Entfernung aller signifikanten `delay()`-Aufrufe und blockierenden Netzwerk-Routinen im Haupt-Loop zur Vermeidung von Watchdog-Triggern (WDT).
+- **WLAN-Handling:** Die blockierenden Verbindungs-Loops wurden durch asynchrone WiFi-Events ersetzt. Das Display friert bei Verbindungsabbrüchen oder Reconnects nicht mehr ein. (Ref: 565d8c5)
+- **Effizienz-Optimierung:** Die Abfrage der Uhrzeit erfolgt nun über die interne Systemzeit statt über sekündliche I2C-Abfragen des DS3231. Dies entlastet den I2C-Bus und reduziert Latenzen im Haupt-Loop. (Ref: 565d8c5)
+- **Loop-Bereinigung:** Entfernung aller signifikanten `delay()`-Aufrufe und blockierenden Netzwerk-Routinen im Haupt-Loop zur Vermeidung von Watchdog-Triggern (WDT). (Ref: 565d8c5)
 
 ### Entfernt
-- **Software-PWM:** Die jitter-anfällige Software-PWM-Lösung über das SHUTDOWN-Register wurde entfernt. Die Helligkeitssteuerung erfolgt nun ausschließlich über die native Hardware-Intensität des MAX7219 in Kombination mit dem Lichtsensor.
-- Manuelle UDP-NTP-Implementierung und DNS-Resolver-Logik zugunsten der robusten ESP32-Framework-Funktionen.
-- Veraltete Web-UI-Elemente für Software-PWM und manuellen NTP-Test.
+- **Software-PWM:** Die jitter-anfällige Software-PWM-Lösung über das SHUTDOWN-Register wurde entfernt. Die Helligkeitssteuerung erfolgt nun ausschließlich über die native Hardware-Intensität des MAX7219 in Kombination mit dem Lichtsensor. (Ref: 565d8c5)
+- Manuelle UDP-NTP-Implementierung und DNS-Resolver-Logik zugunsten der robusten ESP32-Framework-Funktionen. (Ref: 565d8c5)
+- Veraltete Web-UI-Elemente für Software-PWM und manuellen NTP-Test. (Ref: 565d8c5)
 
 ### Behoben
-- Flackern und Hänger des Displays während Netzwerkaktivitäten durch konsequente Trennung von Anzeige-Logik und Hintergrund-Aufgaben.
-- Watchdog-Resets bei schlechter WLAN-Verbindung durch Eliminierung blockierender Reconnect-Logik.
+- Flackern und Hänger des Displays während Netzwerkaktivitäten durch konsequente Trennung von Anzeige-Logik und Hintergrund-Aufgaben. (Ref: 565d8c5)
+- Watchdog-Resets bei schlechter WLAN-Verbindung durch Eliminierung blockierender Reconnect-Logik. (Ref: 565d8c5)
 
 ### Neu (vorherige Änderungen)
 - `.gitattributes` mit `* text=auto` angelegt, um plattformübergreifend konsistente Zeilenenden sicherzustellen. (Ref: 1cc6d42)
