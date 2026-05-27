@@ -11,7 +11,7 @@ Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1.0.0
 ## [Unreleased]
 
 ### Behoben
-- **Verschwindende Zifferntrenner:** Die ":" Trenner auf dem Display blieben nach einem `mx.clear()` (z. B. bei WLAN-Reconnect oder kurzem Reset-Tastendruck) leer, da der Scroll-Cache sie fälschlicherweise als unverändert und damit bereits gezeichnet betrachtete. Eine neue Funktion `invalidateDisplayCache()` stellt nun sicher, dass nach jedem Leeren des Displays alle Zeichen inklusive der Trenner zwingend neu gezeichnet werden. (Ref: TBD)
+- **Verschwindende Zifferntrenner:** Die ":" Trenner auf dem Display blieben nach einem `mx.clear()` (z. B. bei WLAN-Reconnect oder kurzem Reset-Tastendruck) leer, da der Scroll-Cache sie fälschlicherweise als unverändert und damit bereits gezeichnet betrachtete. Eine neue Funktion `invalidateDisplayCache()` stellt nun sicher, dass nach jedem Leeren des Displays alle Zeichen inklusive der Trenner zwingend neu gezeichnet werden. (Ref: 8f8fe44)
 
 ### Neu
 - **Architektur-Refactor:** Umstellung auf asynchrones SNTP und event-basiertes WLAN für maximale Systemstabilität auf dem ESP32-S3. (Ref: 565d8c5)
