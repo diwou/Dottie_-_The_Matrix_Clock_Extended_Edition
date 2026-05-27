@@ -690,8 +690,7 @@ static void applyFormToConfig() {
   if (server.hasArg(F("bottom_font"))) cfg.bottom_font = (uint8_t)constrain(server.arg(F("bottom_font")).toInt(), 0, 5);
   cfg.weekday_mixed_case = server.hasArg(F("weekday_mixed_case"));
   // Scroll-State und Display-Cache zurücksetzen
-  for (uint8_t _i = 0; _i < 8; _i++) scrollState[_i] = {};
-  scrollInitDone = false;
+  invalidateDisplayCache();
   lastDispTime[0] = 0;
   lastDispDate[0] = 0;
   lastDispWeekday[0] = 0;

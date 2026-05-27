@@ -141,6 +141,16 @@ static void drawTopChar(uint8_t pos, char c) {
   if (pos < 8) { scrollState[pos].shown = c; scrollState[pos].target = c; scrollState[pos].step = 0; }
 }
 
+// Display-Cache und Scroll-Zustand vollständig zurücksetzen (erzwingt kompletten Redraw)
+static void invalidateDisplayCache() {
+  scrollInitDone = false;
+  for (uint8_t i = 0; i < 8; i++) {
+    scrollState[i].shown  = '\0';
+    scrollState[i].target = '\0';
+    scrollState[i].step   = 0;
+  }
+}
+
 static void drawTopText8Raw(const char* s8) {
   for (uint8_t i = 0; i < 8; i++) drawTopChar(i, s8[i] ? s8[i] : ' ');
 }
@@ -559,4 +569,5 @@ static void showTopMarquee(const String& msg, uint16_t seconds) {
     delay(220); yield();
   }
   mx.clear();
+  invalidateDisplayCache();
 }

@@ -376,6 +376,7 @@ static void timeSyncCallback(struct timeval *tv) {
     
     setTimeSource(F("ESP32 (NTP)"), activeNtp);
     // Display-Cache invalidieren
+    invalidateDisplayCache();
     lastDispTime[0] = '\0';
     lastDispDate[0] = '\0';
     lastDispWeekday[0] = '\0';
@@ -536,6 +537,7 @@ static bool connectWiFiSTA(bool showUi = true) {
 
   if (WiFi.status() == WL_CONNECTED) {
     mx.clear();
+    invalidateDisplayCache();
     return true;
   }
 
@@ -544,6 +546,7 @@ static bool connectWiFiSTA(bool showUi = true) {
     showWifiNotFound(vis); vis = !vis; delay(250); yield();
   }
   mx.clear();
+  invalidateDisplayCache();
   return false;
 }
 
@@ -766,6 +769,7 @@ static bool handleRuntimeResetHold() {
     if (!releaseStartMs) releaseStartMs = millis();
     if (millis() - releaseStartMs >= RESET_DEBOUNCE_MS) {
       resetPressStartMs = 0; releaseStartMs = 0; mx.clear();
+      invalidateDisplayCache();
       // Display-Cache invalidieren damit Zeit+Datum neu gezeichnet werden
       lastDispTime[0] = '\0';
       lastDispDate[0] = '\0';
@@ -794,10 +798,12 @@ static void handleWiFiReconnect() {
   if (currentState == ClockWiFiState::DISCONNECTED) {
     drawTopCentered(F("WLAN?"));
     drawMiddleText5x7Centered(F("LOST"));
+    invalidateDisplayCache();
     lastDispTime[0] = '\0';
     lastDispDate[0] = '\0';
   } else if (currentState == ClockWiFiState::CONNECTED) {
     mx.clear();
+    invalidateDisplayCache();
     lastDispTime[0] = '\0';
   }
 
@@ -828,6 +834,7 @@ void setup() {
     drawMiddleText5x7Centered(F("ERROR"));
     delay(1200);
     mx.clear();
+    invalidateDisplayCache();
   }
   setupLightSensor();
   setupRtcTime();
