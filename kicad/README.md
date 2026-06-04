@@ -7,21 +7,21 @@ Hier liegt der importierte KiCad-Stand von Dottie. Die Struktur folgt dem Muster
 | Pfad | Inhalt |
 |---|---|
 | `source/` | KiCad-Projektdateien, Schaltplan, Platine, Blockbibliothek und projektbezogene Hilfsdateien |
-| `fab/rev0.4/` | Fertigungsdaten für die freigegebene Version `0.4` |
+| `fab/rev0.5/` | Fertigungsdaten für die freigegebene Version `0.5` |
 
 ## Fertigungsdaten
 
-Die aktuelle Freigabe liegt in `fab/rev0.4/`:
+Die aktuelle Freigabe liegt in `fab/rev0.5/`:
 
 - `bom.csv` - Stückliste
 - `designators.csv` - Zuordnung der Bauteilbezeichner
 - `netlist.ipc` - IPC-1791-Netzliste
 - `positions.csv` - Bestückungskoordinaten
-- `Dottie_-_The_Matrix_Clock_0.4.zip` - kompletter Export der Fertigungslage
+- `Dottie_-_The_Matrix_Clock_0.5.zip` - kompletter Export der Fertigungslage
 
 ## Stückliste in Kurzform
 
-Die vollständige Stückliste steht in `fab/rev0.4/bom.csv`. Die wichtigsten Funktionsbausteine sind:
+Die vollständige Stückliste steht in `fab/rev0.5/bom.csv`. Die wichtigsten Funktionsbausteine sind:
 
 | Bauteil | Menge | Rolle |
 |---|---:|---|
@@ -37,5 +37,5 @@ Die vollständige Stückliste steht in `fab/rev0.4/bom.csv`. Die wichtigsten Fun
 ## Hinweise
 
 - Die KiCad-Quellen gehören nach `source/`.
-- Fertigungsdaten gehören nach `fab/rev0.4/`.
+- Fertigungsdaten gehören nach `fab/rev0.5/`.
 - Änderungen an der Platine werden im Changelog des Firmware-Repos mit aufgeführt, damit Firmware- und Hardware-Stand zusammenbleiben.

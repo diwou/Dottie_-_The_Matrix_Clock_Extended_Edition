@@ -6,8 +6,8 @@
 	(paper "A4")
 	(title_block
 		(title "NTP Dot Matrix Clock 64x32")
-		(date "2026-05-10")
-		(rev "0.4")
+		(date "2026-06-04")
+		(rev "0.5")
 		(company "Dirk Wouters")
 	)
 	(lib_symbols
