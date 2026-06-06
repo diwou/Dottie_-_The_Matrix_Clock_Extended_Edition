@@ -1043,7 +1043,7 @@ void loop() {
 
       char envBuf[128];
       if (isfinite(bmeTemp) && isfinite(bmeHumi) && isfinite(bmePres)) {
-        snprintf(envBuf, sizeof(envBuf), "%.1f\u00B0C - %.1f %% - %.1f hPa ", 
+        snprintf(envBuf, sizeof(envBuf), "%.1f\xB0" "C - %.1f %% - %.1f hPa ", 
                  bmeTemp, bmeHumi, bmePres);
       } else {
         strcpy(envBuf, "Warte auf Sensordaten... ");
