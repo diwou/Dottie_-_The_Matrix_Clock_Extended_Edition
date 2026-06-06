@@ -1051,7 +1051,7 @@ void loop() {
       String envStr = String(envBuf);
       
       initU8g2Bottom();
-      u8g2_SetFont(&g_u8g2_bottom, u8g2_font_5x7_tf); // Feste Schrift für Scroll
+      u8g2_SetFont(&g_u8g2_bottom, u8g2_font_5x7_tf);
       int16_t fullWidth = u8g2_GetStrWidth(&g_u8g2_bottom, envStr.c_str());
       
       u8g2_ClearBuffer(&g_u8g2_bottom);
@@ -1064,7 +1064,8 @@ void loop() {
         scrollPosX--;
       }
 
-      // Buffer kopieren (wie in drawBottomTextU8g2Centered)
+      // Buffered Update um Flackern zu vermeiden
+      mx.control(MD_MAX72XX::UPDATE, MD_MAX72XX::OFF);
       clearRow(MAP_BOTTOM);
       uint8_t *buf = u8g2_GetBufferPtr(&g_u8g2_bottom);
       for (uint8_t col = 0; col < 64; col++) {
@@ -1075,7 +1076,10 @@ void loop() {
           }
         }
       }
-      // Invalidierung damit der Wochentag nach dem Zurückschalten neu gezeichnet wird
+      mx.control(MD_MAX72XX::UPDATE, MD_MAX72XX::ON);
+
+      // Font-Cache invalidieren, damit der Wochentag wieder seinen eigenen Font bekommt
+      g_u8g2_current_font = -1;
       lastDispWeekday[0] = '\0';
     }
   }
