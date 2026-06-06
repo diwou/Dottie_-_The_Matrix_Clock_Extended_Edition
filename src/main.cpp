@@ -1022,14 +1022,16 @@ void loop() {
   if (cfg.bottom_mode == 0) showEnv = false;
   else if (cfg.bottom_mode == 1) showEnv = true;
   else if (cfg.bottom_mode == 2) {
-    if (now - lastBottomSwitchMs >= (uint32_t)cfg.bottom_switch_sec * 1000) {
-      lastBottomSwitchMs = now;
-      showEnv = !showEnv;
-      if (showEnv) scrollPosX = 64; // Reset Scroll
+    if (!showEnv) {
+      if (now - lastBottomSwitchMs >= (uint32_t)cfg.bottom_switch_sec * 1000) {
+        showEnv = true;
+        scrollPosX = 64; // Scroll am rechten Rand starten
+      }
     }
   }
 
   if (!showEnv) {
+    lastBottomSwitchMs = now; // Timer für Wochentag wird erst aktiv wenn wir nicht scrollen
     // Wochentag anzeigen
     if (wd != String(lastWeekday)) {
       strncpy(lastWeekday, wd.c_str(), sizeof(lastDispWeekday) - 1);
@@ -1057,8 +1059,12 @@ void loop() {
       u8g2_ClearBuffer(&g_u8g2_bottom);
       u8g2_DrawStr(&g_u8g2_bottom, scrollPosX, 7, envStr.c_str());
       
-      // Wenn das Ende erreicht ist, wieder von vorne (mit Lücke)
+      // Wenn das Ende erreicht ist, wieder von vorne (oder zurück zum Wochentag)
       if (scrollPosX < -fullWidth) {
+        if (cfg.bottom_mode == 2) {
+          showEnv = false;
+          lastBottomSwitchMs = now; // Timer für Wochentag neu starten
+        }
         scrollPosX = 64;
       } else {
         scrollPosX--;
