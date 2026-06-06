@@ -14,6 +14,7 @@ Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1.0.0
 - **Verschwindende Zifferntrenner:** Die ":" Trenner auf dem Display blieben nach einem `mx.clear()` (z. B. bei WLAN-Reconnect oder kurzem Reset-Tastendruck) leer, da der Scroll-Cache sie fälschlicherweise als unverändert und damit bereits gezeichnet betrachtete. Eine neue Funktion `invalidateDisplayCache()` stellt nun sicher, dass nach jedem Leeren des Displays alle Zeichen inklusive der Trenner zwingend neu gezeichnet werden. (Ref: 8f8fe44)
 
 ### Neu
+- **BME680 Umweltdaten:** Anzeige von Temperatur, Luftfeuchtigkeit, Luftdruck und Gaswiderstand im Web-UI-Reiter "Umweltdaten". Die Werte werden alle 30 Sekunden aktualisiert. (Ref: cc5d772)
 - **Architektur-Refactor:** Umstellung auf asynchrones SNTP und event-basiertes WLAN für maximale Systemstabilität auf dem ESP32-S3. (Ref: 565d8c5)
 - Native Unterstützung der ESP32-Systemzeit (`time.h`): Die interne Uhr wird beim Booten aus dem DS3231 initialisiert und danach autonom per SNTP synchronisiert. (Ref: 565d8c5)
 - SNTP-Synchronisations-Callback: Der DS3231 RTC-Baustein wird nun automatisch im Hintergrund aktualisiert, sobald eine NTP-Synchronisation erfolgt. (Ref: 565d8c5)
