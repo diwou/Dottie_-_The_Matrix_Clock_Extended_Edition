@@ -1031,7 +1031,6 @@ void loop() {
   }
 
   if (!showEnv) {
-    lastBottomSwitchMs = now; // Timer für Wochentag wird erst aktiv wenn wir nicht scrollen
     // Wochentag anzeigen
     if (wd != String(lastWeekday)) {
       strncpy(lastWeekday, wd.c_str(), sizeof(lastDispWeekday) - 1);
@@ -1053,7 +1052,6 @@ void loop() {
       String envStr = String(envBuf);
       
       initU8g2Bottom();
-      u8g2_SetFont(&g_u8g2_bottom, u8g2_font_5x7_tf);
       int16_t fullWidth = u8g2_GetStrWidth(&g_u8g2_bottom, envStr.c_str());
       
       u8g2_ClearBuffer(&g_u8g2_bottom);
@@ -1083,9 +1081,6 @@ void loop() {
         }
       }
       mx.control(MD_MAX72XX::UPDATE, MD_MAX72XX::ON);
-
-      // Font-Cache invalidieren, damit der Wochentag wieder seinen eigenen Font bekommt
-      g_u8g2_current_font = -1;
       lastDispWeekday[0] = '\0';
     }
   }
