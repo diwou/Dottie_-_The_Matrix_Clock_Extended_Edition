@@ -286,6 +286,14 @@ static void handleRoot() {
           "if(ei)ei.textContent=d.i2c_env_diag||'-';"
           "var eb=document.getElementById('v-bme');"
           "if(eb)eb.textContent=d.bme_ok?'ja':'nein';"
+          "var et=document.getElementById('v-bme-temp');"
+          "if(et)et.textContent=d.bme_temp>-100?d.bme_temp.toFixed(1)+' \u00B0C':'-';"
+          "var eh=document.getElementById('v-bme-humi');"
+          "if(eh)eh.textContent=d.bme_humi>=0?d.bme_humi.toFixed(1)+' %':'-';"
+          "var ep=document.getElementById('v-bme-pres');"
+          "if(ep)ep.textContent=d.bme_pres>=0?d.bme_pres.toFixed(1)+' hPa':'-';"
+          "var eg=document.getElementById('v-bme-gas');"
+          "if(eg)eg.textContent=d.bme_gas>=0?d.bme_gas.toFixed(1)+' kOhm':'-';"
           "var ebd=document.getElementById('v-bme-diag');"
           "if(ebd)ebd.textContent=d.bme_diag||'-';"
           "var rd=document.getElementById('v-rtc-date');"
@@ -465,11 +473,15 @@ static void handleRoot() {
   chunk(F("<div class='row2'>"));
   chunk(F("<div class='stat'>"
           "<b>BME680 vorhanden:</b> <span id='v-bme'>-</span><br>"
-          "<b>BME680 Diagnose:</b> <span id='v-bme-diag'>-</span>"
+          "<b>Temperatur:</b> <span id='v-bme-temp'>-</span><br>"
+          "<b>Feuchtigkeit:</b> <span id='v-bme-humi'>-</span><br>"
+          "<b>Luftdruck:</b> <span id='v-bme-pres'>-</span><br>"
+          "<b>Gaswiderstand:</b> <span id='v-bme-gas'>-</span><br>"
+          "<b>Diagnose:</b> <span id='v-bme-diag'>-</span>"
           "</div>"));
   chunk(F("<div class='stat'>"
           "<b>VEML7700:</b> <span id='v-env-sensor'>-</span><br>"
-          "<b>Lux:</b> <span id='v-env-lux'>-</span>"
+          "<b>Helligkeit:</b> <span id='v-env-lux'>-</span>"
           "</div>"));
   chunk(F("</div>"));
   chunk(F("<h3>I2C-Scan</h3>"));
@@ -948,6 +960,10 @@ static void handleApiStatus() {
   json += String(F("\"i2c_env_diag\":\"")) + jsonEscape(i2cDiagEnv) + F("\",");
   json += String(F("\"bme_ok\":")) + (bmeOk ? F("true") : F("false")) + F(",");
   json += String(F("\"bme_diag\":\"")) + jsonEscape(bmeDiag) + F("\",");
+  json += String(F("\"bme_temp\":")) + (isfinite(bmeTemp) ? String(bmeTemp, 1) : String(-127.0f)) + F(",");
+  json += String(F("\"bme_humi\":")) + (isfinite(bmeHumi) ? String(bmeHumi, 1) : String(-1.0f)) + F(",");
+  json += String(F("\"bme_pres\":")) + (isfinite(bmePres) ? String(bmePres, 1) : String(-1.0f)) + F(",");
+  json += String(F("\"bme_gas\":")) + (isfinite(bmeGas) ? String(bmeGas, 1) : String(-1.0f)) + F(",");
   json += String(F("\"rtc_present\":")) + (rtcPresent ? F("true") : F("false")) + F(",");
   json += String(F("\"rtc_ok\":")) + (rtcValid ? F("true") : F("false")) + F(",");
   json += String(F("\"rtc_date\":\"")) + rtcDate + F("\",");

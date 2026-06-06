@@ -93,6 +93,11 @@ static String   i2cDiagEnv      = F("nicht gefunden");
 static bool     bmeOk           = false;
 static uint8_t  bmeAddress      = 0;
 static String   bmeDiag         = F("nicht gefunden");
+static float    bmeTemp         = NAN;
+static float    bmeHumi         = NAN;
+static float    bmePres         = NAN;
+static float    bmeGas          = NAN;
+static uint32_t lastBmeMs       = 0;
 static bool     ds3231Present   = false;
 static bool     ds3231TimeValid = false;
 static String   timeSource      = F("keine");
@@ -406,6 +411,20 @@ static bool setupRtcTime() {
   settimeofday(&tv, NULL);
 
   return true;
+}
+
+static void updateBme680() {
+  if (!bmeOk) return;
+  unsigned long now = millis();
+  if (lastBmeMs != 0 && now - lastBmeMs < 30000) return;
+  lastBmeMs = now;
+
+  if (bme.performReading()) {
+    bmeTemp = bme.temperature;
+    bmeHumi = bme.humidity;
+    bmePres = bme.pressure / 100.0f;
+    bmeGas  = bme.gas_resistance / 1000.0f;
+  }
 }
 
 static void retryLightSensorIfNeeded() {
@@ -904,6 +923,7 @@ void loop() {
   handleWiFiReconnect();
 
   // ⑥b Umgebungslicht -> Displayhelligkeit
+  updateBme680();
   retryLightSensorIfNeeded();
   if (g_spiBrightnessForce) {
     g_spiBrightnessForce = false;
