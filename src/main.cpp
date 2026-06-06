@@ -94,6 +94,7 @@ static uint16_t     bmeHistIdx = 0;
 static uint16_t     bmeHistCount = 0;
 static uint32_t     lastBmeHistMs = 0;
 static uint32_t     lastBmeSaveMs = 0;
+static String       lastBmeSaveTime = F("noch nie");
 
 // ============================================================
 // Status-Variablen
@@ -441,6 +442,17 @@ static void saveHistory() {
   f.write((uint8_t*)&bmeHistCount, sizeof(bmeHistCount));
   f.write((uint8_t*)bmeHistory, sizeof(bmeHistory));
   f.close();
+
+  time_t t_now = time(nullptr);
+  if (t_now > 1700000000UL) {
+    struct tm tm_l;
+    localtime_r(&t_now, &tm_l);
+    char buf[12];
+    snprintf(buf, sizeof(buf), "%02d:%02d:%02d", tm_l.tm_hour, tm_l.tm_min, tm_l.tm_sec);
+    lastBmeSaveTime = String(buf);
+  } else {
+    lastBmeSaveTime = String(millis() / 1000) + F("s (Uptime)");
+  }
 }
 
 static void loadHistory() {

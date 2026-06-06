@@ -350,6 +350,8 @@ static void handleRoot() {
           "if(ep)ep.textContent=d.bme_pres>=0?d.bme_pres.toFixed(1)+' hPa':'-';"
           "var eg=document.getElementById('v-bme-gas');"
           "if(eg)eg.textContent=d.bme_gas>=0?d.bme_gas.toFixed(1)+' kOhm':'-';"
+          "var els=document.getElementById('v-bme-save');"
+          "if(els)els.textContent=d.bme_last_save||'-';"
           "var ebd=document.getElementById('v-bme-diag');"
           "if(ebd)ebd.textContent=d.bme_diag||'-';"
           "var rd=document.getElementById('v-rtc-date');"
@@ -534,6 +536,7 @@ static void handleRoot() {
           "<b>Feuchtigkeit:</b> <span id='v-bme-humi'>-</span><br>"
           "<b>Luftdruck:</b> <span id='v-bme-pres'>-</span><br>"
           "<b>Gaswiderstand:</b> <span id='v-bme-gas'>-</span><br>"
+          "<b>Zuletzt gespeichert:</b> <span id='v-bme-save'>-</span><br>"
           "<b>Diagnose:</b> <span id='v-bme-diag'>-</span>"
           "</div>"));
   chunk(F("<div class='stat'>"
@@ -1071,6 +1074,7 @@ static void handleApiStatus() {
   json += String(F("\"bme_gas\":")) + (isfinite(bmeGas) ? String(bmeGas, 1) : String(-1.0f)) + F(",");
   json += String(F("\"bme_iaq\":")) + String(bmeIaqScore, 0) + F(",");
   json += String(F("\"bme_iaq_text\":\"")) + jsonEscape(iaqText(bmeIaqScore)) + F("\",");
+  json += String(F("\"bme_last_save\":\"")) + jsonEscape(lastBmeSaveTime) + F("\",");
   json += String(F("\"rtc_present\":")) + (rtcPresent ? F("true") : F("false")) + F(",");
   json += String(F("\"rtc_ok\":")) + (rtcValid ? F("true") : F("false")) + F(",");
   json += String(F("\"rtc_date\":\"")) + rtcDate + F("\",");
