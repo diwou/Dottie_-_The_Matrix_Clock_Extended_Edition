@@ -15,6 +15,7 @@ Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1.0.0
 
 ### Neu
 - **BME680 Umweltdaten:** Anzeige von Temperatur, Luftfeuchtigkeit, Luftdruck und Gaswiderstand im Web-UI-Reiter "Umweltdaten". Die Werte werden alle 30 Sekunden aktualisiert. (Ref: bfee853)
+- **Umweltdaten-Anzeige auf Display:** Die 3. Modulreihe kann nun optional Umweltdaten (Temp, Feuchte, Luftdruck) als Scrolltext anzeigen. Konfigurierbar im Web-UI (nur Wochentag, nur Umweltdaten oder wechselnd). (Ref: 17808c5)
 - **IAQ-Index (Luftqualität):** Implementierung eines vereinfachten IAQ-Index (0-500) basierend auf Gaswiderstand und Luftfeuchtigkeit, inklusive farbiger Statusanzeige im Web-UI. (Ref: 682a1d3)
 - **Architektur-Refactor:** Umstellung auf asynchrones SNTP und event-basiertes WLAN für maximale Systemstabilität auf dem ESP32-S3. (Ref: 565d8c5)
 - Native Unterstützung der ESP32-Systemzeit (`time.h`): Die interne Uhr wird beim Booten aus dem DS3231 initialisiert und danach autonom per SNTP synchronisiert. (Ref: 565d8c5)
