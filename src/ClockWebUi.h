@@ -115,13 +115,51 @@ static void handleRoot() {
           ".dm-panel{background:#0a0a0a;border:1px solid #1e1e2a;border-radius:10px;padding:10px 14px 8px;margin-left:auto;box-shadow:0 0 24px rgba(255,140,0,.08),inset 0 0 20px rgba(0,0,0,.6);}"
           ".dm-lbl{font-size:8px;letter-spacing:2px;color:#2a2a3a;text-align:center;text-transform:uppercase;margin-bottom:5px;font-family:monospace;}"
           ".dm-div{height:1px;background:linear-gradient(to right,transparent,#1a1a2a,transparent);margin:5px 0;}"
+          ".chart-wrap{background:var(--soft);border-radius:8px;padding:12px;margin-bottom:6px;border:1px solid var(--border)}"
+          ".chart{height:140px;width:100%;margin-top:8px;position:relative}"
+          ".chart svg{width:100%;height:100%;display:block;overflow:visible}"
+          ".chart-line{fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}"
+          ".chart-area{opacity:0.15}"
+          ".chart-grid{stroke:var(--border);stroke-width:1;stroke-dasharray:4,4}"
+          ".chart-lbl{font-size:11px;fill:var(--muted);font-weight:600}"
           "</style>"
           "<script>"
           "function showTab(id){"
           "document.querySelectorAll('.tab,.panel').forEach(e=>e.classList.remove('active'));"
           "document.getElementById('t_'+id).classList.add('active');"
           "document.getElementById('p_'+id).classList.add('active');"
-          "localStorage.setItem('tab',id);}"
+          "localStorage.setItem('tab',id);"
+          "if(id=='env')updHistory();}"
+          "function updHistory(){"
+          "fetch('/api/history').then(r=>r.json()).then(d=>{"
+          "if(!d||!d.length)return;"
+          "renderC('c_temp',d,'t','#3b82f6','\u00B0C');"
+          "renderC('c_humi',d,'h','#84cc16','%');"
+          "renderC('c_pres',d,'p','#f97316','hPa');"
+          "renderC('c_iaq',d,'i','#ef4444','');"
+          "}).catch(e=>console.error(e));}"
+          "function renderC(id,data,key,col,unit){"
+          "var el=document.getElementById(id); if(!el)return;"
+          "var w=el.clientWidth, h=el.clientHeight, pad=20;"
+          "var vals=data.map(e=>e[key]);"
+          "var min=Math.min(...vals), max=Math.max(...vals);"
+          "if(max==min){min-=1;max+=1;} var ran=max-min;"
+          "var pts=vals.map((v,i)=>({"
+          "x:(i/(vals.length-1))*(w),"
+          "y:h-pad-((v-min)/ran)*(h-pad*2)}));"
+          "var dLine='M'+pts.map(p=>p.x+','+p.y).join('L');"
+          "var dArea=dLine+'L'+w+','+h+'L0,'+h+'Z';"
+          "var svg='<svg viewBox=\"0 0 '+w+' '+h+'\">'+"
+          "'<line class=\"chart-grid\" x1=\"0\" y1=\"'+(h-pad)+'\" x2=\"'+w+'\" y2=\"'+(h-pad)+'\"/>'+"
+          "'<line class=\"chart-grid\" x1=\"0\" y1=\"'+pad+'\" x2=\"'+w+'\" y2=\"'+pad+'\"/>'+"
+          "'<path class=\"chart-area\" d=\"'+dArea+'\" fill=\"'+col+'\"/>'+"
+          "'<path class=\"chart-line\" d=\"'+dLine+'\" stroke=\"'+col+'\"/>'+"
+          "'<text class=\"chart-lbl\" x=\"0\" y=\"'+(h-2)+'\">'+min.toFixed(1)+unit+'</text>'+"
+          "'<text class=\"chart-lbl\" x=\"0\" y=\"'+(pad-6)+'\">'+max.toFixed(1)+unit+'</text>'+"
+          "'<text class=\"chart-lbl\" x=\"'+(w-35)+'\" y=\"'+(h-2)+'\">JETZT</text>'+"
+          "'<text class=\"chart-lbl\" x=\"'+(w-35)+'\" y=\"'+(pad-6)+'\">+24h</text>'+"
+          "'</svg>';"
+          "el.innerHTML=svg;}"
           "function updTheme(){"
           "var cb=document.getElementById('dark_mode');"
           "document.body.classList.toggle('theme-dark', !!(cb&&cb.checked));}"
@@ -506,6 +544,16 @@ static void handleRoot() {
   chunk(F("<h3>I2C-Scan</h3>"));
   chunk(F("<div class='stat'><b>RTC/Licht:</b> <span id='v-i2c'>-</span></div>"));
   chunk(F("<div class='stat'><b>Umwelt:</b> <span id='v-i2c-env'>-</span></div>"));
+
+  chunk(F("<h3>24h Historie</h3>"));
+  chunk(F("<div class='row2'>"));
+  chunk(F("<div class='chart-wrap'><label>Temperatur (\u00B0C)</label><div id='c_temp' class='chart'></div></div>"));
+  chunk(F("<div class='chart-wrap'><label>Luftfeuchtigkeit (%)</label><div id='c_humi' class='chart'></div></div>"));
+  chunk(F("</div><div class='row2'>"));
+  chunk(F("<div class='chart-wrap'><label>Luftdruck (hPa)</label><div id='c_pres' class='chart'></div></div>"));
+  chunk(F("<div class='chart-wrap'><label>Luftqualität (IAQ)</label><div id='c_iaq' class='chart'></div></div>"));
+  chunk(F("</div>"));
+
   chunk(F("</div>")); // panel env
 
   // ============================================================
