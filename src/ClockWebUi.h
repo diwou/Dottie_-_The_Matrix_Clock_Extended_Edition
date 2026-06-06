@@ -1066,8 +1066,37 @@ static void handleDiag() {
   server.send(200, F("text/html"), out);
 }
 
+static void handleApiHistory() {
+  server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+  server.send(200, F("application/json"), "");
+  chunk(F("["));
+  
+  uint16_t count = 0;
+  for (uint16_t i = 0; i < bmeHistCount; i++) {
+    // Start bei ältester Position
+    uint16_t idx = (bmeHistIdx - bmeHistCount + i + BME_HIST_POINTS) % BME_HIST_POINTS;
+    BmeHistEntry &e = bmeHistory[idx];
+    
+    String entry = "{";
+    entry += String(F("\"t\":")) + String(e.temp, 1) + F(",");
+    entry += String(F("\"h\":")) + String(e.humi, 1) + F(",");
+    entry += String(F("\"p\":")) + String(e.pres, 1) + F(",");
+    entry += String(F("\"i\":")) + String(e.iaq, 0);
+    entry += "}";
+    
+    chunk(entry);
+    if (i < bmeHistCount - 1) chunk(F(","));
+    
+    // Alle paar Einträge yielden um Webserver nicht zu blockieren
+    if (++count % 20 == 0) yield();
+  }
+  
+  chunk(F("]"));
+}
+
 static void setupWeb() {
   server.on(F("/"),            handleRoot);
+  server.on(F("/api/history"), handleApiHistory);
   server.on(F("/save"),        HTTP_POST, handleSave);
   server.on(F("/apply"),       HTTP_POST, handleApply);
   server.on(F("/applyreboot"), HTTP_POST, handleApplyReboot);

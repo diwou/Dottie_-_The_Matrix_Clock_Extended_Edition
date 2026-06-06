@@ -76,6 +76,25 @@ WiFiManager wifiMgr;
 Adafruit_VEML7700 veml;
 Adafruit_BME680 bme;
 
+static const char BME_HISTORY_FILE[] PROGMEM = "/bme_hist.bin";
+
+// ============================================================
+// Umweltdaten-Historie (24h)
+// ============================================================
+#define BME_HIST_POINTS 288  // 24h * 12 (alle 5 Min)
+struct BmeHistEntry {
+  float temp;
+  float humi;
+  float pres;
+  float iaq;
+};
+
+static BmeHistEntry bmeHistory[BME_HIST_POINTS];
+static uint16_t     bmeHistIdx = 0;
+static uint16_t     bmeHistCount = 0;
+static uint32_t     lastBmeHistMs = 0;
+static uint32_t     lastBmeSaveMs = 0;
+
 // ============================================================
 // Status-Variablen
 // ============================================================
@@ -415,6 +434,45 @@ static bool setupRtcTime() {
   return true;
 }
 
+static void saveHistory() {
+  File f = LittleFS.open(BME_HISTORY_FILE, "w");
+  if (!f) return;
+  f.write((uint8_t*)&bmeHistIdx, sizeof(bmeHistIdx));
+  f.write((uint8_t*)&bmeHistCount, sizeof(bmeHistCount));
+  f.write((uint8_t*)bmeHistory, sizeof(bmeHistory));
+  f.close();
+}
+
+static void loadHistory() {
+  if (!LittleFS.exists(BME_HISTORY_FILE)) return;
+  File f = LittleFS.open(BME_HISTORY_FILE, "r");
+  if (!f) return;
+  if (f.size() == (sizeof(bmeHistIdx) + sizeof(bmeHistCount) + sizeof(bmeHistory))) {
+    f.read((uint8_t*)&bmeHistIdx, sizeof(bmeHistIdx));
+    f.read((uint8_t*)&bmeHistCount, sizeof(bmeHistCount));
+    f.read((uint8_t*)bmeHistory, sizeof(bmeHistory));
+  }
+  f.close();
+}
+
+static void updateHistory() {
+  unsigned long now = millis();
+  if (lastBmeHistMs != 0 && now - lastBmeHistMs < 300000) return; // Alle 5 Min
+  lastBmeHistMs = now;
+
+  if (isfinite(bmeTemp) && isfinite(bmeHumi) && isfinite(bmePres)) {
+    bmeHistory[bmeHistIdx] = { bmeTemp, bmeHumi, bmePres, bmeIaqScore };
+    bmeHistIdx = (bmeHistIdx + 1) % BME_HIST_POINTS;
+    if (bmeHistCount < BME_HIST_POINTS) bmeHistCount++;
+
+    // Alle 60 Min wegspeichern
+    if (now - lastBmeSaveMs >= 3600000) {
+      lastBmeSaveMs = now;
+      saveHistory();
+    }
+  }
+}
+
 static void updateBme680() {
   if (!bmeOk) return;
   unsigned long now = millis();
@@ -606,6 +664,7 @@ static void webServerTask(void* arg) {
     if (WiFi.getMode() & WIFI_AP) dnsServer.processNextRequest();
     server.handleClient();
     updateBme680();
+    updateHistory();
     vTaskDelay(pdMS_TO_TICKS(1));
   }
 }
@@ -873,6 +932,7 @@ void setup() {
   }
 
   bool configOk = loadConfig();
+  loadHistory();
   if (!configOk) {
     drawTopCentered(F("CFG"));
     drawMiddleText5x7Centered(F("ERROR"));
