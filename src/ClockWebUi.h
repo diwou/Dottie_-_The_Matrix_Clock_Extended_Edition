@@ -131,6 +131,7 @@ static void handleRoot() {
           "updTheme();"
           "updDhcp();"
           "updDst();"
+          "updBottomMode();"
           "};"
           "function updDhcp(){"
           "var dh=document.getElementById('use_dhcp');"
@@ -145,6 +146,14 @@ static void handleRoot() {
           "var show=sel.value=='3';"
           "var sec=document.getElementById('dst_custom');"
           "if(sec)sec.style.display=show?'block':'none';}"
+          "function updBottomMode(){"
+          "var sel=document.querySelector('[name=bottom_mode]');"
+          "if(!sel)return;"
+          "var m=parseInt(sel.value);"
+          "var s=document.getElementById('grp_bottom_switch');"
+          "var c=document.getElementById('grp_bottom_scroll');"
+          "if(s)s.style.display=(m==2)?'block':'none';"
+          "if(c)c.style.display=(m>=1)?'block':'none';}"
           "function rtcSetNow(){"
           "var d=document.getElementById('rtc_date');"
           "var t=document.getElementById('rtc_time');"
@@ -590,6 +599,19 @@ static void handleRoot() {
   chunk(String(F("<div class='chk'><input type='checkbox' name='weekday_mixed_case' value='1'")) +
         checked(cfg.weekday_mixed_case) +
         F("><label>Gro&szlig;-/Kleinschreibung (z.&nbsp;B. Mittwoch statt MITTWOCH)</label></div>"));
+  
+  chunk(F("<h3>Anzeigemodus 3. Zeile</h3>"));
+  chunk(F("<div class='row2'>"));
+  chunk(F("<div><label>Modus</label><select name='bottom_mode' onchange='updBottomMode()'>"));
+  chunk(String(F("<option value='0'")) + selected(cfg.bottom_mode == 0) + F(">Nur Wochentag</option>"));
+  chunk(String(F("<option value='1'")) + selected(cfg.bottom_mode == 1) + F(">Nur Umweltdaten</option>"));
+  chunk(String(F("<option value='2'")) + selected(cfg.bottom_mode == 2) + F(">Wechselnd</option>"));
+  chunk(F("</select></div>"));
+  chunk(String(F("<div id='grp_bottom_switch'><label>Wechsel-Intervall (Sek.)</label><input name='bottom_switch_sec' type='number' min='2' max='600' value='")) + cfg.bottom_switch_sec + F("'></div>"));
+  chunk(F("</div>"));
+  chunk(String(F("<div id='grp_bottom_scroll'><label>Scroll-Geschwindigkeit (ms pro Pixel, 10=schnell, 100=langsam)</label>"
+                 "<input name='bottom_scroll_speed' type='number' min='5' max='250' value='")) + cfg.bottom_scroll_speed + F("'></div>"));
+
   chunk(F("</div>")); // panel display
 
   // ============================================================
@@ -709,6 +731,10 @@ static void applyFormToConfig() {
   cfg.dark_mode = server.hasArg(F("dark_mode"));
   if (server.hasArg(F("bottom_font"))) cfg.bottom_font = (uint8_t)constrain(server.arg(F("bottom_font")).toInt(), 0, 5);
   cfg.weekday_mixed_case = server.hasArg(F("weekday_mixed_case"));
+  if (server.hasArg(F("bottom_mode"))) cfg.bottom_mode = (uint8_t)constrain(server.arg(F("bottom_mode")).toInt(), 0, 2);
+  if (server.hasArg(F("bottom_switch_sec"))) cfg.bottom_switch_sec = (uint16_t)constrain(server.arg(F("bottom_switch_sec")).toInt(), 2, 600);
+  if (server.hasArg(F("bottom_scroll_speed"))) cfg.bottom_scroll_speed = (uint8_t)constrain(server.arg(F("bottom_scroll_speed")).toInt(), 5, 250);
+  
   // Scroll-State und Display-Cache zurücksetzen
   invalidateDisplayCache();
   lastDispTime[0] = 0;

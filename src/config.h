@@ -71,6 +71,9 @@ struct Config {
   bool     dark_mode        = false;
   uint8_t  bottom_font       = 0;  // 0=ncenR08 1=helvR08 2=timR08 3=courR08 4=lubR08 5=helvB08
   bool     weekday_mixed_case = false; // false=GROSSBUCHSTABEN, true=Groß/Klein
+  uint8_t  bottom_mode       = 0;  // 0=Wochentag, 1=Umweltdaten, 2=Wechselnd
+  uint16_t bottom_switch_sec = 10; // Sekunden zwischen Wechsel (bei mode=2)
+  uint8_t  bottom_scroll_speed = 50; // Scroll-Geschwindigkeit (ms pro Pixel)
 
   // OTA
   bool     ota_enabled   = true;
@@ -185,6 +188,9 @@ static bool loadConfig() {
     CFG_BOOL("scroll_enabled",  scroll_enabled)
     CFG_BOOL("dark_mode",       dark_mode)
     CFG_BOOL("weekday_mixed_case", weekday_mixed_case)
+    CFG_INT("bottom_mode",      bottom_mode,      uint8_t)
+    CFG_INT("bottom_switch_sec", bottom_switch_sec, uint16_t)
+    CFG_INT("bottom_scroll_speed", bottom_scroll_speed, uint8_t)
     CFG_BOOL("ota_enabled",  ota_enabled)
     CFG_STR("ota_password",  ota_password)
 
@@ -227,6 +233,9 @@ static bool saveConfig() {
   W("ip_show_sec",      cfg.ip_show_sec);
   W("brightness",       cfg.brightness);
   W("bottom_font",      cfg.bottom_font);
+  W("bottom_mode",      cfg.bottom_mode);
+  W("bottom_switch_sec", cfg.bottom_switch_sec);
+  W("bottom_scroll_speed", cfg.bottom_scroll_speed);
   W("auto_brightness",  cfg.auto_brightness ? "1" : "0");
   W("scroll_enabled",   cfg.scroll_enabled ? 1 : 0);
   W("dark_mode",        cfg.dark_mode ? "1" : "0");

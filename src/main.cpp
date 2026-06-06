@@ -1008,9 +1008,75 @@ void loop() {
 
   if (strcmp(t, lastTime) != 0) { strcpy(lastTime, t); drawTimeHHMMSS(t); }
   if (strcmp(d, lastDate) != 0) { strcpy(lastDate, d); drawMiddleText5x7Centered(String(d)); }
-  if (wd != String(lastWeekday)) {
-    strncpy(lastWeekday, wd.c_str(), sizeof(lastDispWeekday) - 1);
-    lastWeekday[sizeof(lastDispWeekday) - 1] = '\0';
-    drawBottomTextU8g2Centered(wd);
+
+  // 3. Zeile (Wochentag / Umweltdaten)
+  static uint32_t lastBottomSwitchMs = 0;
+  static bool showEnv = false;
+  static int16_t scrollPosX = 64;
+  static uint32_t lastScrollBottomMs = 0;
+  static String lastEnvStr = "";
+
+  uint32_t now = millis();
+
+  // Modus-Logik
+  if (cfg.bottom_mode == 0) showEnv = false;
+  else if (cfg.bottom_mode == 1) showEnv = true;
+  else if (cfg.bottom_mode == 2) {
+    if (now - lastBottomSwitchMs >= (uint32_t)cfg.bottom_switch_sec * 1000) {
+      lastBottomSwitchMs = now;
+      showEnv = !showEnv;
+      if (showEnv) scrollPosX = 64; // Reset Scroll
+    }
+  }
+
+  if (!showEnv) {
+    // Wochentag anzeigen
+    if (wd != String(lastWeekday)) {
+      strncpy(lastWeekday, wd.c_str(), sizeof(lastDispWeekday) - 1);
+      lastWeekday[sizeof(lastDispWeekday) - 1] = '\0';
+      drawBottomTextU8g2Centered(wd);
+    }
+  } else {
+    // Umweltdaten scrollen
+    if (now - lastScrollBottomMs >= cfg.bottom_scroll_speed) {
+      lastScrollBottomMs = now;
+
+      char envBuf[128];
+      if (isfinite(bmeTemp) && isfinite(bmeHumi) && isfinite(bmePres)) {
+        snprintf(envBuf, sizeof(envBuf), "%.1f\u00B0C - %.1f %% - %.1f hPa ", 
+                 bmeTemp, bmeHumi, bmePres);
+      } else {
+        strcpy(envBuf, "Warte auf Sensordaten... ");
+      }
+      String envStr = String(envBuf);
+      
+      initU8g2Bottom();
+      u8g2_SetFont(&g_u8g2_bottom, u8g2_font_5x7_tf); // Feste Schrift für Scroll
+      int16_t fullWidth = u8g2_GetStrWidth(&g_u8g2_bottom, envStr.c_str());
+      
+      u8g2_ClearBuffer(&g_u8g2_bottom);
+      u8g2_DrawStr(&g_u8g2_bottom, scrollPosX, 7, envStr.c_str());
+      
+      // Wenn das Ende erreicht ist, wieder von vorne (mit Lücke)
+      if (scrollPosX < -fullWidth) {
+        scrollPosX = 64;
+      } else {
+        scrollPosX--;
+      }
+
+      // Buffer kopieren (wie in drawBottomTextU8g2Centered)
+      clearRow(MAP_BOTTOM);
+      uint8_t *buf = u8g2_GetBufferPtr(&g_u8g2_bottom);
+      for (uint8_t col = 0; col < 64; col++) {
+        uint8_t tile = col / 8;
+        for (uint8_t row = 0; row < 8; row++) {
+          if (buf[row * 8 + tile] & (0x80 >> (col & 7))) {
+            rowSet(MAP_BOTTOM, col, row, true);
+          }
+        }
+      }
+      // Invalidierung damit der Wochentag nach dem Zurückschalten neu gezeichnet wird
+      lastDispWeekday[0] = '\0';
+    }
   }
 }
