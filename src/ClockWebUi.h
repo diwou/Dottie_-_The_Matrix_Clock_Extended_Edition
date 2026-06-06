@@ -286,6 +286,13 @@ static void handleRoot() {
           "if(ei)ei.textContent=d.i2c_env_diag||'-';"
           "var eb=document.getElementById('v-bme');"
           "if(eb)eb.textContent=d.bme_ok?'ja':'nein';"
+          "var eiq=document.getElementById('v-bme-iaq');"
+          "if(eiq)eiq.textContent=d.bme_iaq>=0?d.bme_iaq:'-';"
+          "var eiqt=document.getElementById('v-bme-iaq-text');"
+          "if(eiqt){"
+          "  eiqt.textContent=d.bme_iaq_text||'-';"
+          "  if(d.bme_iaq<0)eiqt.style.color=''; else if(d.bme_iaq<=50)eiqt.style.color='#16a34a'; else if(d.bme_iaq<=100)eiqt.style.color='#84cc16'; else if(d.bme_iaq<=150)eiqt.style.color='#eab308'; else if(d.bme_iaq<=200)eiqt.style.color='#f97316'; else eiqt.style.color='#dc2626';"
+          "}"
           "var et=document.getElementById('v-bme-temp');"
           "if(et)et.textContent=d.bme_temp>-100?d.bme_temp.toFixed(1)+' \u00B0C':'-';"
           "var eh=document.getElementById('v-bme-humi');"
@@ -473,6 +480,7 @@ static void handleRoot() {
   chunk(F("<div class='row2'>"));
   chunk(F("<div class='stat'>"
           "<b>BME680 vorhanden:</b> <span id='v-bme'>-</span><br>"
+          "<b>Luftqualität (IAQ):</b> <span id='v-bme-iaq'>-</span> &nbsp; <b id='v-bme-iaq-text'>-</b><br>"
           "<b>Temperatur:</b> <span id='v-bme-temp'>-</span><br>"
           "<b>Feuchtigkeit:</b> <span id='v-bme-humi'>-</span><br>"
           "<b>Luftdruck:</b> <span id='v-bme-pres'>-</span><br>"
@@ -941,6 +949,17 @@ static void handleApiStatus() {
                            (unsigned long)m,
                            (unsigned long)s);
 
+  auto iaqText = [](float score) -> const char* {
+    if (score < 0) return "Wird ermittelt...";
+    if (score <= 50) return "Ausgezeichnet";
+    if (score <= 100) return "Gut";
+    if (score <= 150) return "Mäßig";
+    if (score <= 200) return "Unvorteilhaft";
+    if (score <= 250) return "Schlecht";
+    if (score <= 350) return "Sehr schlecht";
+    return "Extrem schlecht";
+  };
+
   String json = "{";
   json += String(F("\"time\":\"")) + tbuf + F("\",");
   json += String(F("\"date\":\"")) + dbuf + F("\",");
@@ -964,6 +983,8 @@ static void handleApiStatus() {
   json += String(F("\"bme_humi\":")) + (isfinite(bmeHumi) ? String(bmeHumi, 1) : String(-1.0f)) + F(",");
   json += String(F("\"bme_pres\":")) + (isfinite(bmePres) ? String(bmePres, 1) : String(-1.0f)) + F(",");
   json += String(F("\"bme_gas\":")) + (isfinite(bmeGas) ? String(bmeGas, 1) : String(-1.0f)) + F(",");
+  json += String(F("\"bme_iaq\":")) + String(bmeIaqScore, 0) + F(",");
+  json += String(F("\"bme_iaq_text\":\"")) + jsonEscape(iaqText(bmeIaqScore)) + F("\",");
   json += String(F("\"rtc_present\":")) + (rtcPresent ? F("true") : F("false")) + F(",");
   json += String(F("\"rtc_ok\":")) + (rtcValid ? F("true") : F("false")) + F(",");
   json += String(F("\"rtc_date\":\"")) + rtcDate + F("\",");

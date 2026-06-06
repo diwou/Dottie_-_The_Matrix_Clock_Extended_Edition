@@ -97,6 +97,8 @@ static float    bmeTemp         = NAN;
 static float    bmeHumi         = NAN;
 static float    bmePres         = NAN;
 static float    bmeGas          = NAN;
+static float    bmeIaqScore     = -1.0f;
+static float    bmeGasBaseline  = 0.0f;
 static uint32_t lastBmeMs       = 0;
 static bool     ds3231Present   = false;
 static bool     ds3231TimeValid = false;
@@ -423,7 +425,29 @@ static void updateBme680() {
     bmeTemp = bme.temperature;
     bmeHumi = bme.humidity;
     bmePres = bme.pressure / 100.0f;
-    bmeGas  = bme.gas_resistance / 1000.0f;
+    float gas_res = bme.gas_resistance / 1000.0f;
+    bmeGas = gas_res;
+
+    // Einfache IAQ-Berechnung (Trend-basiert)
+    // Nach 5 Minuten Aufwärmzeit fangen wir an, die Baseline zu bestimmen
+    if (millis() > 300000) {
+      if (gas_res > bmeGasBaseline) bmeGasBaseline = gas_res;
+    }
+
+    if (bmeGasBaseline > 0) {
+      // 25% Feuchtigkeit, 75% Gas-Widerstand
+      float hum_ref = 40.0f; // Ideale Feuchtigkeit
+      float hum_score = 0;
+      if (bmeHumi >= hum_ref) hum_score = (100.0f - bmeHumi) / (100.0f - hum_ref);
+      else hum_score = (bmeHumi / hum_ref);
+      hum_score *= 100.0f;
+
+      float gas_score = (gas_res / bmeGasBaseline) * 100.0f;
+      float air_quality_score = (hum_score * 0.25f) + (gas_score * 0.75f);
+      
+      // Umrechnung auf Bosch-Skala 0-500 (invertiert: 100% Qualität = 0 IAQ)
+      bmeIaqScore = (100.0f - air_quality_score) * 5.0f;
+    }
   }
 }
 
