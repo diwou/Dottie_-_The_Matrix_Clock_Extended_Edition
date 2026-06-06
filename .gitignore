@@ -19,11 +19,14 @@ CLAUDE.md.*
 .claude/
 AGENTS.md
 GEMINI.md
+.geminipolicy.json
 
 # Lokale Notizen / temporäre Dateien
 ToDo.txt
 context-log.md
 gotchas.md
+build-utf8.log
+build.log
 
 # Generierte Firmware-Version und Export-Artefakte
 include/version_generated.h
