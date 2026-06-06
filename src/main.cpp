@@ -1051,7 +1051,7 @@ void loop() {
       }
       String envStr = String(envBuf);
       
-      initU8g2Bottom();
+      initU8g2Bottom(cfg.bottom_env_font);
       int16_t fullWidth = u8g2_GetStrWidth(&g_u8g2_bottom, envStr.c_str());
       
       u8g2_ClearBuffer(&g_u8g2_bottom);

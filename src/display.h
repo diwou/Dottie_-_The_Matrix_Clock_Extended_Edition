@@ -429,10 +429,10 @@ static uint8_t u8x8_gpio_bottom_dummy(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int
   return 1;
 }
 
-static void initU8g2Bottom() {
-  int8_t fid = (int8_t)constrain((int)cfg.bottom_font, 0, 5);
-  if (g_u8g2_current_font == fid) return;
-  g_u8g2_current_font = fid;
+static void initU8g2Bottom(uint8_t fid) {
+  fid = (uint8_t)constrain((int)fid, 0, 5);
+  if (g_u8g2_current_font == (int8_t)fid) return;
+  g_u8g2_current_font = (int8_t)fid;
   u8g2_Setup_max7219_64x8_f(&g_u8g2_bottom, U8G2_R0,
     u8x8_byte_bottom_dummy, u8x8_gpio_bottom_dummy);
   u8g2_SetFont(&g_u8g2_bottom, BOTTOM_FONTS[fid]);
@@ -440,7 +440,7 @@ static void initU8g2Bottom() {
 }
 
 static void drawBottomTextU8g2Centered(const String& s) {
-  initU8g2Bottom();
+  initU8g2Bottom(cfg.bottom_font);
   clearRow(MAP_BOTTOM);
 
   const char* str = s.c_str();

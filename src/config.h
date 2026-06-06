@@ -70,6 +70,7 @@ struct Config {
   bool     scroll_enabled   = true; // Scroll-Effekt auf Ziffern
   bool     dark_mode        = false;
   uint8_t  bottom_font       = 0;  // 0=ncenR08 1=helvR08 2=timR08 3=courR08 4=lubR08 5=helvB08
+  uint8_t  bottom_env_font   = 0;
   bool     weekday_mixed_case = false; // false=GROSSBUCHSTABEN, true=Groß/Klein
   uint8_t  bottom_mode       = 0;  // 0=Wochentag, 1=Umweltdaten, 2=Wechselnd
   uint16_t bottom_switch_sec = 10; // Sekunden zwischen Wechsel (bei mode=2)
@@ -184,6 +185,7 @@ static bool loadConfig() {
     CFG_INT("ip_show_sec",      ip_show_sec,      uint16_t)
     CFG_INT("brightness",       brightness,       uint8_t)
     CFG_INT("bottom_font",      bottom_font,      uint8_t)
+    CFG_INT("bottom_env_font",  bottom_env_font,  uint8_t)
     CFG_BOOL("auto_brightness", auto_brightness)
     CFG_BOOL("scroll_enabled",  scroll_enabled)
     CFG_BOOL("dark_mode",       dark_mode)
@@ -233,6 +235,7 @@ static bool saveConfig() {
   W("ip_show_sec",      cfg.ip_show_sec);
   W("brightness",       cfg.brightness);
   W("bottom_font",      cfg.bottom_font);
+  W("bottom_env_font",  cfg.bottom_env_font);
   W("bottom_mode",      cfg.bottom_mode);
   W("bottom_switch_sec", cfg.bottom_switch_sec);
   W("bottom_scroll_speed", cfg.bottom_scroll_speed);
