@@ -1055,7 +1055,7 @@ void loop() {
       int16_t fullWidth = u8g2_GetStrWidth(&g_u8g2_bottom, envStr.c_str());
       
       u8g2_ClearBuffer(&g_u8g2_bottom);
-      u8g2_DrawStr(&g_u8g2_bottom, scrollPosX, 7, envStr.c_str());
+      u8g2_DrawStr(&g_u8g2_bottom, scrollPosX, 8, envStr.c_str());
       
       // Wenn das Ende erreicht ist, wieder von vorne (oder zurück zum Wochentag)
       if (scrollPosX < -fullWidth) {
