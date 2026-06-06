@@ -1042,20 +1042,28 @@ void loop() {
     if (now - lastScrollBottomMs >= cfg.bottom_scroll_speed) {
       lastScrollBottomMs = now;
 
-      char envBuf[128];
-      if (isfinite(bmeTemp) && isfinite(bmeHumi) && isfinite(bmePres)) {
-        snprintf(envBuf, sizeof(envBuf), "%.1f\xB0" "C - %.1f %% - %.1f hPa ", 
-                 bmeTemp, bmeHumi, bmePres);
-      } else {
-        strcpy(envBuf, "Warte auf Sensordaten... ");
+      // String nur generieren wenn nötig oder Messwerte sich ändern könnten
+      static String envStr = "";
+      static int16_t fullWidth = 0;
+      static uint32_t lastUpdate = 0;
+
+      if (envStr == "" || now - lastUpdate > 10000) {
+        lastUpdate = now;
+        char envBuf[128];
+        if (isfinite(bmeTemp) && isfinite(bmeHumi) && isfinite(bmePres)) {
+          // UTF-8 Grad-Symbol: \xC2\xB0
+          snprintf(envBuf, sizeof(envBuf), "%.1f\xC2\xB0" "C - %.1f %% - %.1f hPa ", 
+                   bmeTemp, bmeHumi, bmePres);
+        } else {
+          strcpy(envBuf, "Warte auf Sensordaten... ");
+        }
+        envStr = String(envBuf);
+        initU8g2Bottom(cfg.bottom_env_font);
+        fullWidth = u8g2_GetUTF8Width(&g_u8g2_bottom, envStr.c_str());
       }
-      String envStr = String(envBuf);
-      
-      initU8g2Bottom(cfg.bottom_env_font);
-      int16_t fullWidth = u8g2_GetStrWidth(&g_u8g2_bottom, envStr.c_str());
       
       u8g2_ClearBuffer(&g_u8g2_bottom);
-      u8g2_DrawStr(&g_u8g2_bottom, scrollPosX, 8, envStr.c_str());
+      u8g2_DrawUTF8(&g_u8g2_bottom, scrollPosX, 8, envStr.c_str());
       
       // Wenn das Ende erreicht ist, wieder von vorne (oder zurück zum Wochentag)
       if (scrollPosX < -fullWidth) {
@@ -1064,6 +1072,7 @@ void loop() {
           lastBottomSwitchMs = now; // Timer für Wochentag neu starten
         }
         scrollPosX = 64;
+        envStr = ""; // String beim nächsten Mal neu berechnen
       } else {
         scrollPosX--;
       }
