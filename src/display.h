@@ -402,12 +402,12 @@ static u8g2_t g_u8g2_bottom;
 static int8_t g_u8g2_current_font = -1;  // Neuladen erzwingen bei Änderung
 
 static const uint8_t* BOTTOM_FONTS[] = {
-  u8g2_font_ncenR08_tr,   // 0: New Century Schoolbook
-  u8g2_font_helvR08_tr,   // 1: Helvetica
-  u8g2_font_timR08_tr,    // 2: Times
-  u8g2_font_courR08_tr,   // 3: Courier
-  u8g2_font_lubR08_tr,    // 4: Lubalin Graph
-  u8g2_font_helvB08_tr,   // 5: Helvetica Bold
+  u8g2_font_ncenR08_tf,   // 0: New Century Schoolbook
+  u8g2_font_helvR08_tf,   // 1: Helvetica
+  u8g2_font_timR08_tf,    // 2: Times
+  u8g2_font_courR08_tf,   // 3: Courier
+  u8g2_font_lubR08_tf,    // 4: Lubalin Graph
+  u8g2_font_helvB08_tf,   // 5: Helvetica Bold
 };
 
 const char* BOTTOM_FONT_LABELS[6] = {

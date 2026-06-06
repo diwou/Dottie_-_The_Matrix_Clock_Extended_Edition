@@ -605,6 +605,7 @@ static void webServerTask(void* arg) {
   for (;;) {
     if (WiFi.getMode() & WIFI_AP) dnsServer.processNextRequest();
     server.handleClient();
+    updateBme680();
     vTaskDelay(pdMS_TO_TICKS(1));
   }
 }
@@ -947,7 +948,6 @@ void loop() {
   handleWiFiReconnect();
 
   // ⑥b Umgebungslicht -> Displayhelligkeit
-  updateBme680();
   retryLightSensorIfNeeded();
   if (g_spiBrightnessForce) {
     g_spiBrightnessForce = false;
