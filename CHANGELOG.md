@@ -14,6 +14,7 @@ Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1.0.0
 - **Verschwindende Zifferntrenner:** Die ":" Trenner auf dem Display blieben nach einem `mx.clear()` (z. B. bei WLAN-Reconnect oder kurzem Reset-Tastendruck) leer, da der Scroll-Cache sie fälschlicherweise als unverändert und damit bereits gezeichnet betrachtete. Eine neue Funktion `invalidateDisplayCache()` stellt nun sicher, dass nach jedem Leeren des Displays alle Zeichen inklusive der Trenner zwingend neu gezeichnet werden. (Ref: 8f8fe44)
 
 ### Neu
+- **Konfigurierbarer Hostname:** Der Gerätename (mDNS & DHCP) kann nun im Web-UI unter "WLAN" angepasst werden (Standard: "dottie"). (Ref: c505ded)
 - **24h Umweltdaten-Historie:** Automatische Aufzeichnung von Temperatur, Feuchtigkeit, Luftdruck und IAQ-Index alle 5 Minuten. Die Daten werden stündlich im LittleFS gesichert und bleiben bei Neustart erhalten. (Ref: 1592afd)
 - **SVG-Visualisierung:** Interaktive 24h-Kurvendiagramme im Web-UI (Reiter "Umweltdaten"). Die Grafiken werden rein clientseitig per SVG gerendert, ohne externe Bibliotheken oder Internetabhängigkeit. (Ref: 84aa3b9)
 - **BME680 Umweltdaten:** Anzeige von Temperatur, Luftfeuchtigkeit, Luftdruck und Gaswiderstand im Web-UI-Reiter "Umweltdaten". Die Werte werden alle 30 Sekunden aktualisiert. (Ref: bfee853)
