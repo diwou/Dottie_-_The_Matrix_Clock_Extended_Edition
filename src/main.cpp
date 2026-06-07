@@ -99,8 +99,8 @@ static String       lastBmeSaveTime = F("noch nie");
 // I2C Mutex für Thread-Safety (ESP32 Multi-Core)
 #if defined(ARDUINO_ARCH_ESP32)
 static SemaphoreHandle_t i2cMutex = nullptr;
-#define I2C_LOCK()   if(i2cMutex) xSemaphoreTake(i2cMutex, portMAX_DELAY)
-#define I2C_UNLOCK() if(i2cMutex) xSemaphoreGive(i2cMutex)
+#define I2C_LOCK()   if(i2cMutex) xSemaphoreTakeRecursive(i2cMutex, portMAX_DELAY)
+#define I2C_UNLOCK() if(i2cMutex) xSemaphoreGiveRecursive(i2cMutex)
 #else
 #define I2C_LOCK()
 #define I2C_UNLOCK()
@@ -973,7 +973,7 @@ static void handleWiFiReconnect() {
 // ============================================================
 void setup() {
 #if defined(ARDUINO_ARCH_ESP32)
-  i2cMutex = xSemaphoreCreateMutex();
+  i2cMutex = xSemaphoreCreateRecursiveMutex();
 #endif
   bootMs = millis();
   pinMode(FACTORY_RESET_PIN, INPUT);
