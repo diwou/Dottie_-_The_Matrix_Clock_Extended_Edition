@@ -526,10 +526,12 @@ static void updateBme680() {
     bmeGas = gas_res;
 
     // Einfache IAQ-Berechnung (Trend-basiert)
-    // Wenn wir noch keine Baseline haben, nehmen wir den ersten gültigen Wert (>0)
-    if (gas_res > 0.1f) {
-      if (bmeGasBaseline < 0.1f || gas_res > bmeGasBaseline) {
-        bmeGasBaseline = gas_res;
+    // Erst nach 3 Minuten (180s) Aufwärmzeit ist der Sensor stabil genug für die Baseline
+    if (millis() > 180000) {
+      if (gas_res > 0.1f) {
+        if (bmeGasBaseline < 0.1f || gas_res > bmeGasBaseline) {
+          bmeGasBaseline = gas_res;
+        }
       }
     }
 
@@ -546,6 +548,8 @@ static void updateBme680() {
       
       // Umrechnung auf Bosch-Skala 0-500 (invertiert: 100% Qualität = 0 IAQ)
       bmeIaqScore = (100.0f - air_quality_score) * 5.0f;
+    } else {
+      bmeIaqScore = -1.0f; // Signalisiert "Wird ermittelt / Stabilisierung"
     }
   }
 }

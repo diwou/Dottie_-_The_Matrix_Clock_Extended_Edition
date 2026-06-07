@@ -1049,7 +1049,7 @@ static void handleApiStatus() {
                            (unsigned long)s);
 
   auto iaqText = [](float score) -> const char* {
-    if (score < 0) return "Wird ermittelt...";
+    if (score < 0) return "Sensoren stabilisieren...";
     if (score <= 50) return "Ausgezeichnet";
     if (score <= 100) return "Gut";
     if (score <= 150) return "Mäßig";
