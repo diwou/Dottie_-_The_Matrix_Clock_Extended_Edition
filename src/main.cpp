@@ -397,10 +397,10 @@ static void timeSyncCallback(struct timeval *tv) {
     rtcSetTimeFromEpoch(now);
     lastSyncEpoch = now;
     lastRtcSyncMs = millis();
-    
+
     const char* server = sntp_getservername(0);
     activeNtp = server ? String(server) : cfg.ntp1;
-    
+
     setTimeSource(F("ESP32 (NTP)"), activeNtp);
     // Display-Cache invalidieren
     invalidateDisplayCache();
@@ -408,6 +408,14 @@ static void timeSyncCallback(struct timeval *tv) {
     lastDispDate[0] = '\0';
     lastDispWeekday[0] = '\0';
   }
+}
+
+static bool isTimeSynced() {
+  if (lastSyncEpoch == 0) return false;
+  // Wenn mehr als das Doppelte des Intervalls vergangen ist (oder mind. 1h)
+  uint32_t threshold = (uint32_t)cfg.ntp_interval_min * 60 * 2;
+  if (threshold < 3600) threshold = 3600; 
+  return (time(nullptr) - lastSyncEpoch < threshold);
 }
 
 static bool setupRtcTime() {
@@ -801,7 +809,7 @@ static const char* weekdayLabelDe(uint8_t wday, bool mixedCase) {
   return mixedCase ? DAYS_MC[wday] : DAYS_UC[wday];
 }
 
-static bool getLocalStrings(char timeStr[9], char dateStr[11], String& weekdayStr) {
+static bool getLocalStrings(char timeStr[9], char dateStr[11], String& weekdayStr, bool hideColon = false) {
   time_t now = time(nullptr);
   if (now < 1700000000UL) return false;
   struct tm tmNow;
@@ -811,15 +819,15 @@ static bool getLocalStrings(char timeStr[9], char dateStr[11], String& weekdaySt
   if (cfg.show_24h) {
     if (cfg.show_seconds) {
       write2Digits(timeStr, (uint8_t)tmNow.tm_hour);
-      timeStr[2] = ':';
+      timeStr[2] = hideColon ? ' ' : ':';
       write2Digits(timeStr + 3, (uint8_t)tmNow.tm_min);
-      timeStr[5] = ':';
+      timeStr[5] = hideColon ? ' ' : ':';
       write2Digits(timeStr + 6, (uint8_t)tmNow.tm_sec);
       timeStr[8] = '\0';
     } else {
       timeStr[0] = ' ';
       write2Digits(timeStr + 1, (uint8_t)tmNow.tm_hour);
-      timeStr[3] = ':';
+      timeStr[3] = hideColon ? ' ' : ':';
       write2Digits(timeStr + 4, (uint8_t)tmNow.tm_min);
       timeStr[6] = ' ';
       timeStr[7] = ' ';
@@ -831,7 +839,7 @@ static bool getLocalStrings(char timeStr[9], char dateStr[11], String& weekdaySt
     const char* ap = (tmNow.tm_hour < 12) ? "AM" : "PM";
     timeStr[0] = (h >= 10) ? (char)('0' + h / 10) : ' ';
     timeStr[1] = (char)('0' + h % 10);
-    timeStr[2] = ':';
+    timeStr[2] = hideColon ? ' ' : ':';
     write2Digits(timeStr + 3, (uint8_t)tmNow.tm_min);
     timeStr[5] = ' ';
     timeStr[6] = ap[0];
@@ -1066,7 +1074,8 @@ void loop() {
 
   char t[9], d[11];
   String wd;
-  if (!getLocalStrings(t, d, wd)) {
+  bool blink = !isTimeSynced() && (millis() % 1000 < 500);
+  if (!getLocalStrings(t, d, wd, blink)) {
     if (WiFi.getMode() & WIFI_AP) {
       if (strcmp(lastTime, "AP      ") != 0) {
         strcpy(lastTime, "AP      ");

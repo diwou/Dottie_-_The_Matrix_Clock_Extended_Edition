@@ -196,10 +196,13 @@ static void drawTimeHHMMSS(const char* t) {
   for (uint8_t i = 0; i < 8; i++) {
     char c = t[i] ? t[i] : ' ';
     if (c != scrollState[i].shown) {
-      if (SCROLL_STEPS == 0) {
+      // Sonderfall: Doppelpunkt oder Leerzeichen an Doppelpunkt-Positionen NIE scrollen
+      bool isColonPos = (c == ':' || scrollState[i].shown == ':');
+      if (SCROLL_STEPS == 0 || isColonPos) {
         // Kein Scroll: sofort zeichnen
         scrollState[i].shown  = c;
         scrollState[i].target = c;
+        scrollState[i].step   = 0;
         drawTopChar(i, c);
       } else if (scrollState[i].step == 0) {
         // Scroll starten: immer mit voller Schrittzahl
