@@ -11,11 +11,12 @@ Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1.0.0
 ## [Unreleased]
 
 ### Behoben
+- **Netzwerk-Instabilität:** Das Problem mit dem Aufhängen des Netzwerkstacks wurde durch zwei Maßnahmen behoben: 1. Einführung eines I2C-Mutex für thread-sicheren Multi-Core-Zugriff auf die Sensoren. 2. Optimierung des Webserver-Tasks zur besseren Koexistenz mit dem WLAN-Stack. (Ref: f019a1a)
 - **Verschwindende Zifferntrenner:** Die ":" Trenner auf dem Display blieben nach einem `mx.clear()` (z. B. bei WLAN-Reconnect oder kurzem Reset-Tastendruck) leer, da der Scroll-Cache sie fälschlicherweise als unverändert und damit bereits gezeichnet betrachtete. Eine neue Funktion `invalidateDisplayCache()` stellt nun sicher, dass nach jedem Leeren des Displays alle Zeichen inklusive der Trenner zwingend neu gezeichnet werden. (Ref: 8f8fe44)
 
 ### Neu
+- **NTP-Synchronisations-Anzeige:** Der Sekundentrenner ":" blinkt nun dezent, falls die Uhr seit längerer Zeit keine NTP-Synchronisation mehr erfolgreich durchführen konnte. Im Web-UI wird zudem die verbleibende Zeit bis zum nächsten Sync-Versuch angezeigt. (Ref: f019a1a)
 - **Konfigurierbarer Hostname:** Der Gerätename (mDNS & DHCP) kann nun im Web-UI unter "WLAN" angepasst werden (Standard: "dottie"). (Ref: c505ded)
-- **24h Umweltdaten-Historie:** Automatische Aufzeichnung von Temperatur, Feuchtigkeit, Luftdruck und IAQ-Index alle 5 Minuten. Die Daten werden stündlich im LittleFS gesichert und bleiben bei Neustart erhalten. (Ref: 1592afd)
 - **SVG-Visualisierung:** Interaktive 24h-Kurvendiagramme im Web-UI (Reiter "Umweltdaten"). Die Grafiken werden rein clientseitig per SVG gerendert, ohne externe Bibliotheken oder Internetabhängigkeit. (Ref: 84aa3b9)
 - **BME680 Umweltdaten:** Anzeige von Temperatur, Luftfeuchtigkeit, Luftdruck und Gaswiderstand im Web-UI-Reiter "Umweltdaten". Die Werte werden alle 30 Sekunden aktualisiert. (Ref: bfee853)
 - **Umweltdaten-Anzeige auf Display:** Die 3. Modulreihe kann nun optional Umweltdaten (Temp, Feuchte, Luftdruck) als Scrolltext anzeigen. Konfigurierbar im Web-UI (nur Wochentag, nur Umweltdaten oder wechselnd). (Ref: 17808c5)

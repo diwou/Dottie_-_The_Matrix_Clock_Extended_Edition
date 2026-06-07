@@ -96,6 +96,16 @@ static uint32_t     lastBmeHistMs = 0;
 static uint32_t     lastBmeSaveMs = 0;
 static String       lastBmeSaveTime = F("noch nie");
 
+// I2C Mutex für Thread-Safety (ESP32 Multi-Core)
+#if defined(ARDUINO_ARCH_ESP32)
+static SemaphoreHandle_t i2cMutex = nullptr;
+#define I2C_LOCK()   if(i2cMutex) xSemaphoreTake(i2cMutex, portMAX_DELAY)
+#define I2C_UNLOCK() if(i2cMutex) xSemaphoreGive(i2cMutex)
+#else
+#define I2C_LOCK()
+#define I2C_UNLOCK()
+#endif
+
 // ============================================================
 // Status-Variablen
 // ============================================================
@@ -199,7 +209,10 @@ static void updateBrightnessFromLux(bool force = false) {
   if (!force && now - lastLuxMs < 250) return;
   lastLuxMs = now;
 
+  I2C_LOCK();
   float lux = veml.readLux();
+  I2C_UNLOCK();
+
   if (!isfinite(lux) || lux < 0.0f) {
     applyConfiguredBrightness();
     return;
@@ -261,11 +274,13 @@ static int64_t daysFromCivilUTC(int year, unsigned month, unsigned day) {
 
 static bool rtcEpochToTime(time_t& epochOut) {
   uint8_t raw[7];
+  I2C_LOCK();
   Wire.beginTransmission(0x68);
   Wire.write((uint8_t)0x00);
-  if (Wire.endTransmission(false) != 0) return false;
-  if (Wire.requestFrom((uint8_t)0x68, (uint8_t)7, (uint8_t)true) != 7) return false;
+  if (Wire.endTransmission(false) != 0) { I2C_UNLOCK(); return false; }
+  if (Wire.requestFrom((uint8_t)0x68, (uint8_t)7, (uint8_t)true) != 7) { I2C_UNLOCK(); return false; }
   for (uint8_t i = 0; i < 7; i++) raw[i] = Wire.read();
+  I2C_UNLOCK();
 
   int sec = bcdToBin(raw[0] & 0x7F);
   int min = bcdToBin(raw[1] & 0x7F);
@@ -307,9 +322,12 @@ static bool rtcSetTimeFromEpoch(time_t epoch) {
     binToBcd((uint8_t)((tmUtc.tm_year + 1900) % 100))
   };
 
+  I2C_LOCK();
   Wire.beginTransmission(0x68);
   for (uint8_t i = 0; i < sizeof(buf); i++) Wire.write(buf[i]);
-  return Wire.endTransmission(true) == 0;
+  bool ok = (Wire.endTransmission(true) == 0);
+  I2C_UNLOCK();
+  return ok;
 }
 
 static void setTimeSource(const String& label, const String& detail = "");
@@ -331,10 +349,6 @@ static void setTimeSource(const String& label, const String& detail) {
 }
 
 static void setupLightSensor() {
-  Wire.begin(I2C_SDA_PIN, I2C_SCL_PIN);
-  Wire.setClock(100000);
-  Wire.setTimeOut(50);
-
   uint8_t probe = 0;
   Wire.beginTransmission(VEML7700_I2CADDR_DEFAULT);
   probe = Wire.endTransmission(true);
@@ -358,10 +372,10 @@ static void setupLightSensor() {
   bmeOk = false;
   bmeAddress = 0;
   if (bme76Probe == 0) {
-    bmeOk = bme.begin(0x76, &Wire);
+    bmeOk = bme.begin(0x76, false); 
     if (bmeOk) bmeAddress = 0x76;
   } else if (bme77Probe == 0) {
-    bmeOk = bme.begin(0x77, &Wire);
+    bmeOk = bme.begin(0x77, false);
     if (bmeOk) bmeAddress = 0x77;
   }
   if (bmeOk) {
@@ -499,7 +513,11 @@ static void updateBme680() {
   if (lastBmeMs != 0 && now - lastBmeMs < 30000) return;
   lastBmeMs = now;
 
-  if (bme.performReading()) {
+  I2C_LOCK();
+  bool ok = bme.performReading();
+  I2C_UNLOCK();
+
+  if (ok) {
     bmeTemp = bme.temperature;
     bmeHumi = bme.humidity;
     bmePres = bme.pressure / 100.0f;
@@ -537,7 +555,9 @@ static void retryLightSensorIfNeeded() {
     vemlRetryAtMs = 0;
     return;
   }
+  I2C_LOCK();
   setupLightSensor();
+  I2C_UNLOCK();
 }
 
 // ============================================================
@@ -686,7 +706,7 @@ static void webServerTask(void* arg) {
   for (;;) {
     if (WiFi.getMode() & WIFI_AP) dnsServer.processNextRequest();
     server.handleClient();
-    vTaskDelay(pdMS_TO_TICKS(1));
+    vTaskDelay(pdMS_TO_TICKS(5)); // Etwas mehr Luft für WiFi
   }
 }
 
@@ -952,9 +972,15 @@ static void handleWiFiReconnect() {
 // Setup
 // ============================================================
 void setup() {
+#if defined(ARDUINO_ARCH_ESP32)
+  i2cMutex = xSemaphoreCreateMutex();
+#endif
   bootMs = millis();
   pinMode(FACTORY_RESET_PIN, INPUT);
   WiFi.onEvent(onWiFiEvent);
+
+  Wire.begin(I2C_SDA_PIN, I2C_SCL_PIN);
+  Wire.setClock(100000);
 
   mx.begin();
   mx.control(MD_MAX72XX::TEST, MD_MAX72XX::OFF);
@@ -975,8 +1001,10 @@ void setup() {
     mx.clear();
     invalidateDisplayCache();
   }
+  I2C_LOCK();
   setupLightSensor();
   setupRtcTime();
+  I2C_UNLOCK();
   {
     String tz = posixFromConfig();
     setenv("TZ", tz.c_str(), 1);
@@ -994,6 +1022,7 @@ void setup() {
     setupWeb();
 #if defined(ARDUINO_ARCH_ESP32)
     startBackgroundTasks();
+    sntp_set_sync_interval((uint32_t)cfg.ntp_interval_min * 60 * 1000);
 #endif
     sntp_set_time_sync_notification_cb(timeSyncCallback);
     configTzTime(posixFromConfig().c_str(), cfg.ntp1.c_str(), cfg.ntp2.c_str(), cfg.ntp3.c_str());

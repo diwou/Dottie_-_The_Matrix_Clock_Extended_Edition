@@ -428,10 +428,10 @@ static void handleRoot() {
         + F(" &nbsp; <b>RSSI:</b> ") + WiFi.RSSI() + F(" dBm"
         " &nbsp; <b>Status:</b> <span class='") + (wifiOk ? F("ok'>✓ Verbunden") : F("fail'>✗ Getrennt")) + F("</span>"
         "</div>"));
-    chunk(String(F("<div class='stat'>🌐 <b>DNS:</b> ")) + ipOrLabel(WiFi.dnsIP(0))
+    chunk(String(F("<div class='stat'>&#x1F310; <b>DNS:</b> ")) + ipOrLabel(WiFi.dnsIP(0))
         + F(" / ") + ipOrLabel(WiFi.dnsIP(1))
         + F(" &nbsp; <b>Aktiver NTP:</b> ") + htmlEscape(activeNtp.length() ? activeNtp : "(keiner)")
-        + F(" &nbsp; <b>Nächster Sync:</b> <span id='next_sync'>-</span>"
+        + F(" &nbsp; <b>N&auml;chster Sync:</b> <span id='next_sync'>-</span>"
         "</div>"));
   }
 
@@ -1094,7 +1094,13 @@ static void handleApiStatus() {
   json += String(F("\"last_ntp_sync\":\"")) + lastSync + F("\",");
   json += String(F("\"time_source\":\"")) + jsonEscape(timeSource) + F("\",");
   json += String(F("\"time_source_detail\":\"")) + jsonEscape(timeSourceDetail) + F("\",");
-  json += String(F("\"nextsync\":0,"));
+  uint32_t nextSyncSec = 0;
+  if (lastSyncEpoch > 0) {
+    uint32_t interval = (uint32_t)cfg.ntp_interval_min * 60;
+    uint32_t elapsed = (uint32_t)(time(nullptr) - lastSyncEpoch);
+    if (elapsed < interval) nextSyncSec = interval - elapsed;
+  }
+  json += String(F("\"nextsync\":")) + nextSyncSec + F(",");
   json += String(F("\"heap\":")) + ESP.getFreeHeap() + F(",");
   json += String(F("\"rssi\":")) + (WiFi.status()==WL_CONNECTED ? WiFi.RSSI() : 0);
   json += "}";
