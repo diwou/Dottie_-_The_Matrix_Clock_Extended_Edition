@@ -383,6 +383,7 @@ static void setupLightSensor() {
     bme.setHumidityOversampling(BME680_OS_2X);
     bme.setPressureOversampling(BME680_OS_4X);
     bme.setIIRFilterSize(BME680_FILTER_SIZE_3);
+    bme.setGasHeater(320, 150); // 320°C für 150ms
     bmeDiag = String(F("BME680 OK @0x")) + String(bmeAddress, HEX);
   } else {
     bmeDiag = i2cDiagEnv + F(" | BME680 nicht erkannt");
@@ -525,12 +526,14 @@ static void updateBme680() {
     bmeGas = gas_res;
 
     // Einfache IAQ-Berechnung (Trend-basiert)
-    // Nach 5 Minuten Aufwärmzeit fangen wir an, die Baseline zu bestimmen
-    if (millis() > 300000) {
-      if (gas_res > bmeGasBaseline) bmeGasBaseline = gas_res;
+    // Wenn wir noch keine Baseline haben, nehmen wir den ersten gültigen Wert (>0)
+    if (gas_res > 0.1f) {
+      if (bmeGasBaseline < 0.1f || gas_res > bmeGasBaseline) {
+        bmeGasBaseline = gas_res;
+      }
     }
 
-    if (bmeGasBaseline > 0) {
+    if (bmeGasBaseline > 0.1f && gas_res > 0.1f) {
       // 25% Feuchtigkeit, 75% Gas-Widerstand
       float hum_ref = 40.0f; // Ideale Feuchtigkeit
       float hum_score = 0;
