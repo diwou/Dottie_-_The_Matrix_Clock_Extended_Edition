@@ -604,7 +604,7 @@ static void onWiFiEvent(WiFiEvent_t event) {
       if (wifiMgr.state != ClockWiFiState::CONNECTED) {
         wifiMgr.state = ClockWiFiState::CONNECTED;
         wifiMgr.reset();
-        MDNS.begin("dottie");
+        MDNS.begin(cfg.hostname.c_str());
         sntp_set_time_sync_notification_cb(timeSyncCallback);
         configTzTime(posixFromConfig().c_str(), cfg.ntp1.c_str(), cfg.ntp2.c_str(), cfg.ntp3.c_str());
         // Force redraw
@@ -632,6 +632,7 @@ static void startWiFiSTA() {
   WiFi.persistent(false);
   WiFi.disconnect(true);
   delay(10);
+  WiFi.setHostname(cfg.hostname.c_str());
   clockDisableWiFiSleep();
   applyIpAndDnsBeforeConnect();
   WiFi.begin(cfg.sta_ssid.c_str(), cfg.sta_pass.c_str());
@@ -988,7 +989,7 @@ void setup() {
 
   if (haveCreds && connectWiFiSTA(true)) {
     wifiMgr.state = ClockWiFiState::CONNECTED;
-    MDNS.begin("dottie");
+    MDNS.begin(cfg.hostname.c_str());
     setupOTA();
     setupWeb();
 #if defined(ARDUINO_ARCH_ESP32)

@@ -24,7 +24,6 @@
 
 static const char CFG_FILE[]  PROGMEM = "/cfg.txt";
 static const char AP_PREFIX[] PROGMEM = "DOTTIE-";
-static const char MDNS_NAME[] PROGMEM = "dottie";
 
 // ============================================================
 // Konfigurationsstruktur
@@ -33,6 +32,7 @@ struct Config {
   // WiFi
   String sta_ssid        = "";
   String sta_pass        = "";
+  String hostname        = "dottie";
 
   // IP
   bool   use_dhcp        = true;
@@ -162,9 +162,10 @@ static bool loadConfig() {
     #define CFG_INT(KEY, FIELD, T) if (k == F(KEY)) cfg.FIELD = (T)v.toInt();
     #define CFG_BOOL(KEY, FIELD)  if (k == F(KEY)) cfg.FIELD = (v == "1");
 
-    CFG_STR("sta_ssid",  sta_ssid)
-    CFG_STR("sta_pass",  sta_pass)
-    CFG_BOOL("use_dhcp", use_dhcp)
+    CFG_STR("sta_ssid",   sta_ssid)
+    CFG_STR("sta_pass",   sta_pass)
+    CFG_STR("hostname",   hostname)
+    CFG_BOOL("use_dhcp",  use_dhcp)
     CFG_STR("static_ip",   static_ip)
     CFG_STR("static_gw",   static_gw)
     CFG_STR("static_mask", static_mask)
@@ -214,6 +215,7 @@ static bool saveConfig() {
   #define W(K,V) f.println(String(F(K "=")) + String(V))
   W("sta_ssid",   cfg.sta_ssid);
   W("sta_pass",   cfg.sta_pass);
+  W("hostname",   cfg.hostname);
   W("use_dhcp",   cfg.use_dhcp ? "1" : "0");
   W("static_ip",   cfg.static_ip);
   W("static_gw",   cfg.static_gw);

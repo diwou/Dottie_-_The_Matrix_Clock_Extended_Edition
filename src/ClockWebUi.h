@@ -454,10 +454,11 @@ static void handleRoot() {
   // TAB: WIFI
   // ============================================================
   chunk(F("<div class='panel' id='p_wifi'>"));
-  chunk(F("<h3>WLAN-Zugangsdaten</h3>"));
-  chunk(F("<div class='row2'>"));
-  chunk(String(F("<div><label>SSID</label><input name='sta_ssid' value='")) + htmlEscape(cfg.sta_ssid) + F("'></div>"));
-  chunk(String(F("<div><label>Passwort</label><input name='sta_pass' type='password' value='")) + htmlEscape(cfg.sta_pass) + F("'></div>"));
+  chunk(F("<h3>Netzwerkeinstellungen</h3>"));
+  chunk(F("<div class='row3'>"));
+  chunk(String(F("<div><label>Hostname</label><input name='hostname' value='")) + htmlEscape(cfg.hostname) + F("'></div>"));
+  chunk(String(F("<div><label>WLAN SSID</label><input name='sta_ssid' value='")) + htmlEscape(cfg.sta_ssid) + F("'></div>"));
+  chunk(String(F("<div><label>WLAN Passwort</label><input name='sta_pass' type='password' value='")) + htmlEscape(cfg.sta_pass) + F("'></div>"));
   chunk(F("</div>"));
   chunk(F("<div class='row2'>"));
   chunk(String(F("<div><label>Verbindungs-Timeout (Sek.)</label>"
@@ -689,7 +690,7 @@ static void handleRoot() {
         checked(cfg.ota_enabled) + F("><label style='margin:0'>OTA aktiviert</label></div>"));
   chunk(String(F("<label>OTA-Passwort (leer = kein Passwort)</label>"
                  "<input name='ota_password' type='password' value='")) + htmlEscape(cfg.ota_password) + F("'>"));
-  chunk(F("<p class='hint'>OTA-Hostname: <b>dottie.local</b> — Änderungen gelten nach Neustart.</p>"));
+  chunk(String(F("<p class='hint'>OTA-Hostname: <b>")) + htmlEscape(cfg.hostname) + F(".local</b> — Änderungen gelten nach Neustart.</p>"));
 
   chunk(F("<h3>Darstellung</h3>"));
   chunk(String(F("<div class='chk'><input type='checkbox' id='dark_mode' name='dark_mode' value='1'")) +
@@ -757,6 +758,11 @@ static void applyFormToConfig() {
 
   if (server.hasArg(F("sta_ssid")))   cfg.sta_ssid  = arg("sta_ssid");
   if (server.hasArg(F("sta_pass")))   cfg.sta_pass  = arg("sta_pass");
+  if (server.hasArg(F("hostname"))) {
+    cfg.hostname = arg("hostname");
+    if (cfg.hostname.length() > 32) cfg.hostname = cfg.hostname.substring(0, 32);
+    if (cfg.hostname.length() == 0) cfg.hostname = "dottie";
+  }
 
   cfg.use_dhcp = server.hasArg(F("use_dhcp"));
 
@@ -1103,6 +1109,7 @@ static void handleDiag() {
            "<style>body{font-family:monospace;padding:20px}pre{background:#111;color:#0f0;padding:15px;border-radius:6px}</style>"
            "</head><body><h2>Dottie Diagnose</h2><pre>");
   out += "FW:       "; out += FPSTR(FW_VERSION);       out += "\n";
+  out += "Host:     "; out += htmlEscape(cfg.hostname);   out += "\n";
   out += "SSID:     ["; out += htmlEscape(cfg.sta_ssid); out += "]\n";
   out += "Passwort: ";
   if (cfg.sta_pass.length()) { out += "(gesetzt, "; out += cfg.sta_pass.length(); out += " Zeichen)"; }
