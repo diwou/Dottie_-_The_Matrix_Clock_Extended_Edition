@@ -670,19 +670,33 @@ ClockWebServer server(WEB_PORT);
 DNSServer        dnsServer;
 #if defined(ARDUINO_ARCH_ESP32)
 static TaskHandle_t g_webTaskHandle = nullptr;
+static TaskHandle_t g_sensorTaskHandle = nullptr;
+
 static void webServerTask(void* arg) {
   (void)arg;
   for (;;) {
     if (WiFi.getMode() & WIFI_AP) dnsServer.processNextRequest();
     server.handleClient();
-    updateBme680();
-    updateHistory();
     vTaskDelay(pdMS_TO_TICKS(1));
   }
 }
-static void startWebServerTask() {
-  if (g_webTaskHandle) return;
-  xTaskCreatePinnedToCore(webServerTask, "web", 8192, nullptr, 1, &g_webTaskHandle, 0);
+
+static void sensorTask(void* arg) {
+  (void)arg;
+  for (;;) {
+    updateBme680();
+    updateHistory();
+    vTaskDelay(pdMS_TO_TICKS(1000)); // Sensorik hat Zeit
+  }
+}
+
+static void startBackgroundTasks() {
+  if (!g_webTaskHandle) {
+    xTaskCreatePinnedToCore(webServerTask, "web", 8192, nullptr, 1, &g_webTaskHandle, 0);
+  }
+  if (!g_sensorTaskHandle) {
+    xTaskCreatePinnedToCore(sensorTask, "sensor", 4096, nullptr, 1, &g_sensorTaskHandle, 0);
+  }
 }
 #endif
 
@@ -970,7 +984,7 @@ void setup() {
     setupOTA();
     setupWeb();
 #if defined(ARDUINO_ARCH_ESP32)
-    startWebServerTask();
+    startBackgroundTasks();
 #endif
     sntp_set_time_sync_notification_cb(timeSyncCallback);
     configTzTime(posixFromConfig().c_str(), cfg.ntp1.c_str(), cfg.ntp2.c_str(), cfg.ntp3.c_str());
@@ -986,7 +1000,7 @@ void setup() {
     setupWeb();
     setupOTA();
 #if defined(ARDUINO_ARCH_ESP32)
-    startWebServerTask();
+    startBackgroundTasks();
 #endif
     wifiMgr.state = ClockWiFiState::AP_MODE;
     // AP-IP als Laufschrift damit man weiß wohin verbinden

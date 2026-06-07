@@ -1125,29 +1125,26 @@ static void handleDiag() {
 static void handleApiHistory() {
   server.setContentLength(CONTENT_LENGTH_UNKNOWN);
   server.send(200, F("application/json"), "");
-  chunk(F("["));
+  server.sendContent(F("["));
   
-  uint16_t count = 0;
+  char buf[128];
   for (uint16_t i = 0; i < bmeHistCount; i++) {
     // Start bei ältester Position
     uint16_t idx = (bmeHistIdx - bmeHistCount + i + BME_HIST_POINTS) % BME_HIST_POINTS;
     BmeHistEntry &e = bmeHistory[idx];
     
-    String entry = "{";
-    entry += String(F("\"t\":")) + String(e.temp, 1) + F(",");
-    entry += String(F("\"h\":")) + String(e.humi, 1) + F(",");
-    entry += String(F("\"p\":")) + String(e.pres, 1) + F(",");
-    entry += String(F("\"i\":")) + String(e.iaq, 0);
-    entry += "}";
+    snprintf(buf, sizeof(buf), "{\"t\":%.1f,\"h\":%.1f,\"p\":%.1f,\"i\":%.0f}",
+             e.temp, e.humi, e.pres, e.iaq);
+    server.sendContent(buf);
     
-    chunk(entry);
-    if (i < bmeHistCount - 1) chunk(F(","));
+    if (i < bmeHistCount - 1) server.sendContent(F(","));
     
-    // Alle paar Einträge yielden um Webserver nicht zu blockieren
-    if (++count % 20 == 0) yield();
+    // Alle paar Einträge yielden
+    if (i % 20 == 0) yield();
   }
   
-  chunk(F("]"));
+  server.sendContent(F("]"));
+  server.sendContent("");
 }
 
 static void setupWeb() {
