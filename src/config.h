@@ -7,7 +7,7 @@
 // ============================================================
 // Konstanten
 // ============================================================
-#define APP_VERSION_BASE      "1.5.0"
+#define APP_VERSION_BASE      "1.6.0"
 
 #define FACTORY_RESET_HOLD_MS 5000UL  // ms gehalten → Factory Reset
 #define RESET_DEBOUNCE_MS     80UL

@@ -10,6 +10,8 @@ Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1.0.0
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-06-09
+
 ### Behoben
 - **I2C-Deadlock in setup():** Ein System-Freeze während des Boot-Vorgangs wurde durch die Umstellung auf einen rekursiven Mutex für den I2C-Bus behoben. Dies erlaubt verschachtelte Zugriffe auf den Bus während der Initialisierung. (Ref: ff7aa4e)
 - **BME680 Gasmessung & IAQ-Stabilität:** Korrektur der Heizelement-Konfiguration und Einführung einer 5-minütigen Stabilisierungsphase. Die IAQ-Baseline (Referenz für saubere Luft) wird nun dauerhaft im LittleFS gespeichert und über Neustarts hinweg beibehalten. (Ref: c2f1d9b, 93547eb)
@@ -121,7 +123,8 @@ Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1.0.0
 - Fehler beim Laden oder Speichern der LittleFS-Konfiguration werden nicht mehr stillschweigend als Erfolg behandelt. (Ref: review-2026-04-28-config-io)
 - JSON-Ausgabe des manuellen NTP-Tests escaped Strings jetzt JSON-konform statt per HTML-Escape. (Ref: review-2026-04-28-json)
 
-[Unreleased]: https://codeberg.org/diwou/Dottie_-_The_Matrix_Clock/compare/v1.5.0...HEAD
+[Unreleased]: https://codeberg.org/diwou/Dottie_-_The_Matrix_Clock_Extended_Edition/compare/v1.6.0...HEAD
+[1.6.0]: https://codeberg.org/diwou/Dottie_-_The_Matrix_Clock_Extended_Edition/compare/v1.5.0...v1.6.0
 [1.5.0]: https://codeberg.org/diwou/Dottie_-_The_Matrix_Clock/compare/v1.4.7...v1.5.0
 
 ---

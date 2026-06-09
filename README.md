@@ -10,8 +10,8 @@ Eine Dot-Matrix-Uhr auf Basis einer **ESP32-S3-WROOM-1-N16R8-Platine** mit 16 MA
   </a>
 </p>
 
-- Aktuelle Version: `1.5.0` (Development-Builds zeigen zusätzlich den Codeberg-Kurz-Hash)
-- Repository: `https://codeberg.org/diwou/Dottie_-_The_Matrix_Clock`
+- Aktuelle Version: `1.6.0` (Development-Builds zeigen zusätzlich den Codeberg-Kurz-Hash)
+- Repository: `https://codeberg.org/diwou/Dottie_-_The_Matrix_Clock_Extended_Edition`
 - Browser-Installer: [https://diwou.codeberg.page/Dottie_-_The_Matrix_Clock/](https://diwou.codeberg.page/Dottie_-_The_Matrix_Clock/)
 - Web-UI im Gerät: [http://dottie.local/](http://dottie.local/) im lokalen Netz
 - Lizenz: `CC BY-NC-SA 4.0`
