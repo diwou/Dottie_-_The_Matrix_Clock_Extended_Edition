@@ -10,7 +10,7 @@ Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1.0.0
 
 ## [Unreleased]
 
-## [1.6.0] - 2026-06-09
+## [1.7.0] - 2026-06-09
 
 ### Behoben
 - **I2C-Deadlock in setup():** Ein System-Freeze während des Boot-Vorgangs wurde durch die Umstellung auf einen rekursiven Mutex für den I2C-Bus behoben. Dies erlaubt verschachtelte Zugriffe auf den Bus während der Initialisierung. (Ref: ff7aa4e)
