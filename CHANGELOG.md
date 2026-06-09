@@ -26,8 +26,10 @@ Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1.0.0
 - **Architektur-Refactor:** Umstellung auf asynchrones SNTP und event-basiertes WLAN für maximale Systemstabilität auf dem ESP32-S3. (Ref: 565d8c5)
 - Native Unterstützung der ESP32-Systemzeit (`time.h`): Die interne Uhr wird beim Booten aus dem DS3231 initialisiert und danach autonom per SNTP synchronisiert. (Ref: 565d8c5)
 - SNTP-Synchronisations-Callback: Der DS3231 RTC-Baustein wird nun automatisch im Hintergrund aktualisiert, sobald eine NTP-Synchronisation erfolgt. (Ref: 565d8c5)
+- **BME680 Baseline-Anzeige:** Im Webinterface (Reiter "Umweltdaten") wird nun zusätzlich die berechnete Referenz für "saubere Luft" (Baseline) in kOhm angezeigt. (Ref: 30383a9)
 
 ### Geändert
+- **Projektregeln:** `AGENTS.md` um die verbindliche Regel zur Ausgabe der Session-ID am Ende jeder Aufgabe erweitert. (Ref: 30383a9)
 - **WLAN-Handling:** Die blockierenden Verbindungs-Loops wurden durch asynchrone WiFi-Events ersetzt. Das Display friert bei Verbindungsabbrüchen oder Reconnects nicht mehr ein. (Ref: 565d8c5)
 - **Effizienz-Optimierung:** Die Abfrage der Uhrzeit erfolgt nun über die interne Systemzeit statt über sekündliche I2C-Abfragen des DS3231. Dies entlastet den I2C-Bus und reduziert Latenzen im Haupt-Loop. (Ref: 565d8c5)
 - **Loop-Bereinigung:** Entfernung aller signifikanten `delay()`-Aufrufe und blockierenden Netzwerk-Routinen im Haupt-Loop zur Vermeidung von Watchdog-Triggern (WDT). (Ref: 565d8c5)
