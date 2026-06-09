@@ -4,13 +4,15 @@
 
 Alle nennenswerten Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 
-Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
+Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1.0.0/). 
 
 ---
 
 ## [Unreleased]
 
 ### Behoben
+- **I2C-Deadlock in setup():** Ein System-Freeze während des Boot-Vorgangs wurde durch die Umstellung auf einen rekursiven Mutex für den I2C-Bus behoben. Dies erlaubt verschachtelte Zugriffe auf den Bus während der Initialisierung. (Ref: ff7aa4e)
+- **BME680 Gasmessung & IAQ-Stabilität:** Korrektur der Heizelement-Konfiguration und Einführung einer 5-minütigen Stabilisierungsphase. Die IAQ-Baseline (Referenz für saubere Luft) wird nun dauerhaft im LittleFS gespeichert und über Neustarts hinweg beibehalten. (Ref: c2f1d9b, 93547eb)
 - **Netzwerk-Instabilität:** Das Problem mit dem Aufhängen des Netzwerkstacks wurde durch zwei Maßnahmen behoben: 1. Einführung eines I2C-Mutex für thread-sicheren Multi-Core-Zugriff auf die Sensoren. 2. Optimierung des Webserver-Tasks zur besseren Koexistenz mit dem WLAN-Stack. (Ref: f019a1a)
 - **Verschwindende Zifferntrenner:** Die ":" Trenner auf dem Display blieben nach einem `mx.clear()` (z. B. bei WLAN-Reconnect oder kurzem Reset-Tastendruck) leer, da der Scroll-Cache sie fälschlicherweise als unverändert und damit bereits gezeichnet betrachtete. Eine neue Funktion `invalidateDisplayCache()` stellt nun sicher, dass nach jedem Leeren des Displays alle Zeichen inklusive der Trenner zwingend neu gezeichnet werden. (Ref: 8f8fe44)
 
