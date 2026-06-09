@@ -358,36 +358,7 @@ static void setupLightSensor() {
   dsProbe = Wire.endTransmission(true);
   ds3231Present = (dsProbe == 0);
 
-  uint8_t bme76Probe = 0;
-  Wire.beginTransmission(0x76);
-  bme76Probe = Wire.endTransmission(true);
-
-  uint8_t bme77Probe = 0;
-  Wire.beginTransmission(0x77);
-  bme77Probe = Wire.endTransmission(true);
-
   i2cDiag = String(F("VEML=")) + probe + F(" @0x10, DS3231=") + dsProbe + F(" @0x68");
-  i2cDiagEnv = String(F("BME680@0x76=")) + bme76Probe + F(", BME680@0x77=") + bme77Probe;
-
-  bmeOk = false;
-  bmeAddress = 0;
-  if (bme76Probe == 0) {
-    bmeOk = bme.begin(0x76, false); 
-    if (bmeOk) bmeAddress = 0x76;
-  } else if (bme77Probe == 0) {
-    bmeOk = bme.begin(0x77, false);
-    if (bmeOk) bmeAddress = 0x77;
-  }
-  if (bmeOk) {
-    bme.setTemperatureOversampling(BME680_OS_2X);
-    bme.setHumidityOversampling(BME680_OS_2X);
-    bme.setPressureOversampling(BME680_OS_4X);
-    bme.setIIRFilterSize(BME680_FILTER_SIZE_3);
-    bme.setGasHeater(320, 150); // 320°C für 150ms
-    bmeDiag = String(F("BME680 OK @0x")) + String(bmeAddress, HEX);
-  } else {
-    bmeDiag = i2cDiagEnv + F(" | BME680 nicht erkannt");
-  }
 
   vemlOk = (probe == 0) && veml.begin();
   if (vemlOk) {
@@ -403,6 +374,35 @@ static void setupLightSensor() {
     vemlRetryAtMs = millis() + 3000;
     vemlRetryCount++;
     vemlDiag = i2cDiag + F(" | VEML NACK");
+  }
+}
+
+static void setupBme680() {
+  uint8_t bme76Probe = 0, bme77Probe = 0;
+  Wire.beginTransmission(0x76); bme76Probe = Wire.endTransmission(true);
+  Wire.beginTransmission(0x77); bme77Probe = Wire.endTransmission(true);
+
+  i2cDiagEnv = String(F("BME680@0x76=")) + bme76Probe + F(", BME680@0x77=") + bme77Probe;
+
+  bmeOk = false;
+  bmeAddress = 0;
+  if (bme76Probe == 0) {
+    bmeOk = bme.begin(0x76, false);
+    if (bmeOk) bmeAddress = 0x76;
+  } else if (bme77Probe == 0) {
+    bmeOk = bme.begin(0x77, false);
+    if (bmeOk) bmeAddress = 0x77;
+  }
+
+  if (bmeOk) {
+    bme.setTemperatureOversampling(BME680_OS_2X);
+    bme.setHumidityOversampling(BME680_OS_2X);
+    bme.setPressureOversampling(BME680_OS_4X);
+    bme.setIIRFilterSize(BME680_FILTER_SIZE_3);
+    bme.setGasHeater(320, 150);
+    bmeDiag = String(F("BME680 OK @0x")) + String(bmeAddress, HEX);
+  } else {
+    bmeDiag = i2cDiagEnv + F(" | BME680 nicht erkannt");
   }
 }
 
@@ -1010,6 +1010,7 @@ void setup() {
   }
   I2C_LOCK();
   setupLightSensor();
+  setupBme680();
   setupRtcTime();
   I2C_UNLOCK();
   {
