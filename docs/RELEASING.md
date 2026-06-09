@@ -142,22 +142,17 @@ git push origin main
 git push origin v<NEW>
 ```
 
-### 9. Codeberg-Release anlegen
+### 9. Codeberg-Release anlegen (Automatisiert)
 
-1. Im Browser: `https://codeberg.org/<user>/<repo>/releases/new`
-2. **Tag:** `v<NEW>` auswählen (existiert bereits durch Push)
-3. **Release Title:** `v<NEW>` oder `<NEW> — Kurzbeschreibung`
-4. **Release Notes:** Abschnitt `[<NEW>] - ...` aus dem Changelog einfügen
-   (ohne die Markdown-Überschrift `##` selbst)
-5. **Binärartefakte anhängen** (falls vorhanden):
-   <!-- Projektspezifisch: -->
-   - Firmware: `.pio/build/<board>/firmware.bin`
-   - KiCad-/Fertigungsdaten: `kicad/fab/rev<NEW>/<file>`
-   - etc.
-6. **Publish Release**
+Der Upload auf Codeberg erfolgt vollautomatisch über die Gitea-API. Ein Assistent (Agent) oder der Entwickler kann das bereitgestellte Skript nutzen:
 
-Den vorab erzeugten Source-Tarball und das Zip erzeugt Codeberg automatisch
-aus dem Tag — nicht selbst anhängen.
+```bash
+bash scripts/codeberg_release.sh v<NEW> <Pfad-zu-Release-Notes.md> <Pfad-zur-Firmware.bin>
+```
+
+Das Skript liest das Codeberg-Token lokal aus der `~/.config/tea/config.yml`, erstellt die Release-Seite inklusive Changelog-Text und hängt die Firmware-Binärdatei an. Ein manueller Browser-Schritt ist nicht mehr erforderlich. 
+
+Den Source-Tarball und das Zip erzeugt Codeberg serverseitig weiterhin automatisch aus dem Tag.
 
 ### 10. Nächste Entwicklungsrunde
 
