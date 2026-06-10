@@ -536,28 +536,30 @@ static void updateBme680() {
     bmeTemp = bme.temperature;
     bmeHumi = bme.humidity;
     bmePres = bme.pressure / 100.0f;
-    float gas_res = bme.gas_resistance / 1000.0f;
-    bmeGas = gas_res;
+    float raw_gas = bme.gas_resistance / 1000.0f;
+    
+    // 1. Absolute Feuchtigkeit (AH) in g/m³ berechnen
+    float ah = (6.112f * exp((17.67f * bmeTemp)/(bmeTemp + 243.5f)) * bmeHumi * 2.1674f) / (273.15f + bmeTemp);
+    
+    // 2. Gaswiderstand auf Referenz-Klima (AH_ref = 10.0 g/m³) kompensieren (k=0.04)
+    float comp_gas = raw_gas * exp(0.04f * (ah - 10.0f));
+    bmeGas = comp_gas;
 
-    // Einfache IAQ-Berechnung (Trend-basiert)
+    // 3. IAQ-Berechnung (Trend-basiert)
     // Erst nach 3 Minuten (180s) Aufwärmzeit ist der Sensor stabil genug für die Baseline
     if (millis() > 180000) {
-      if (gas_res > 0.1f) {
+      if (comp_gas > 0.1f) {
         if (bmeGasBaseline < 0.1f) {
-          bmeGasBaseline = gas_res;
-        } else if (gas_res > bmeGasBaseline) {
-          // Schnelles Lernen neuer Spitzenwerte, aber geglättet gegen Rauschen
-          bmeGasBaseline = (bmeGasBaseline * 0.90f) + (gas_res * 0.10f);
+          bmeGasBaseline = comp_gas;
         } else {
-          // Langsames Vergessen (Decay) zur Kompensation von Klimaveränderungen.
-          // 0.2% Anpassung alle 30s. Ein Klima-Umschwung wird so über Stunden normalisiert,
-          // kurzfristige Verunreinigungen bleiben aber korrekt "schlecht".
-          bmeGasBaseline -= (bmeGasBaseline - gas_res) * 0.002f;
+          // Träger Exponential Moving Average (EMA) für die Baseline (Langzeit-Normal)
+          // Alpha = 0.005 dämpft kurzfristige Spikes komplett aus, lernt aber über Stunden das Klima
+          bmeGasBaseline = (bmeGasBaseline * 0.995f) + (comp_gas * 0.005f);
         }
       }
     }
 
-    if (bmeGasBaseline > 0.1f && gas_res > 0.1f) {
+    if (bmeGasBaseline > 0.1f && comp_gas > 0.1f) {
       // 25% Feuchtigkeit, 75% Gas-Widerstand
       float hum_ref = 40.0f; // Ideale Feuchtigkeit
       float hum_score = 0;
@@ -565,7 +567,7 @@ static void updateBme680() {
       else hum_score = (bmeHumi / hum_ref);
       hum_score *= 100.0f;
 
-      float gas_score = (gas_res / bmeGasBaseline) * 100.0f;
+      float gas_score = (comp_gas / bmeGasBaseline) * 100.0f;
       float air_quality_score = (hum_score * 0.25f) + (gas_score * 0.75f);
       
       // Umrechnung auf Bosch-Skala 0-500 (invertiert: 100% Qualität = 0 IAQ)

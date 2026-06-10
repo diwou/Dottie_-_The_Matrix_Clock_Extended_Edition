@@ -10,6 +10,9 @@ Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1.0.0
 
 ## [Unreleased]
 
+### Geändert
+- **IAQ Algorithmus robuster im Dauerbetrieb:** Der BME680-Algorithmus wurde auf Industrie-Standards umgestellt. Der Gaswiderstand wird nun anhand der *absoluten Luftfeuchtigkeit* physikalisch kompensiert, wodurch abendliche Feuchtigkeitsschwankungen (z.B. am offenen Fenster) nicht mehr fälschlicherweise als Verschmutzung gewertet werden. Zudem wird anstelle eines starr gespeicherten Höchstwerts nun eine träge, exponentiell gleitende Baseline (EMA) berechnet. Das System kalibriert sich dadurch im 24/7-Dauerbetrieb fließend selbst und speichert den Stand im LittleFS. (Ref: 56f8fb6)
+
 ## [1.7.0] - 2026-06-09
 
 ### Behoben
