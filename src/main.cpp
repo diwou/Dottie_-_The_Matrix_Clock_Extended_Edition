@@ -624,34 +624,38 @@ static void updateBme680() {
     bmeGas = comp_gas;
 
     // 3. IAQ-Berechnung (Trend-basiert)
-    // Erst nach 3 Minuten (180s) Aufwärmzeit ist der Sensor stabil genug für die Baseline
+    // Erst nach 3 Minuten (180s) Aufwärmzeit ist der Sensor stabil genug
     if (millis() > 180000) {
       if (comp_gas > 0.1f) {
         if (bmeGasBaseline < 0.1f) {
           bmeGasBaseline = comp_gas;
         } else {
-          // Träger Exponential Moving Average (EMA) für die Baseline (Langzeit-Normal)
-          // Alpha = 0.005 dämpft kurzfristige Spikes komplett aus, lernt aber über Stunden das Klima
+          // Träger EMA (symmetrisch): Langsamer Durchschnitt über ca. 1-2 Stunden.
+          // Alpha = 0.005 dämpft kurzfristige Spikes komplett aus, lernt aber das Klima
           bmeGasBaseline = (bmeGasBaseline * 0.995f) + (comp_gas * 0.005f);
         }
       }
-    }
 
-    if (bmeGasBaseline > 0.1f && comp_gas > 0.1f) {
-      // 25% Feuchtigkeit, 75% Gas-Widerstand
-      float hum_ref = 40.0f; // Ideale Feuchtigkeit
-      float hum_score = 0;
-      if (bmeHumi >= hum_ref) hum_score = (100.0f - bmeHumi) / (100.0f - hum_ref);
-      else hum_score = (bmeHumi / hum_ref);
-      hum_score *= 100.0f;
+      if (bmeGasBaseline > 0.1f && comp_gas > 0.1f) {
+        // 25% Feuchtigkeit, 75% Gas-Widerstand
+        float hum_ref = 40.0f; // Ideale Feuchtigkeit
+        float hum_score = 0;
+        if (bmeHumi >= hum_ref) hum_score = (100.0f - bmeHumi) / (100.0f - hum_ref);
+        else hum_score = (bmeHumi / hum_ref);
+        hum_score *= 100.0f;
 
-      float gas_score = (comp_gas / bmeGasBaseline) * 100.0f;
-      float air_quality_score = (hum_score * 0.25f) + (gas_score * 0.75f);
-      
-      // Umrechnung auf Bosch-Skala 0-500 (invertiert: 100% Qualität = 0 IAQ)
-      bmeIaqScore = (100.0f - air_quality_score) * 5.0f;
+        float gas_score = (comp_gas / bmeGasBaseline) * 100.0f;
+        float air_quality_score = (hum_score * 0.25f) + (gas_score * 0.75f);
+        
+        // Umrechnung auf Bosch-Skala 0-500 (invertiert: 100% Qualität = 0 IAQ)
+        bmeIaqScore = (100.0f - air_quality_score) * 5.0f;
+        if (bmeIaqScore < 0.0f) bmeIaqScore = 0.0f;
+        if (bmeIaqScore > 500.0f) bmeIaqScore = 500.0f;
+      } else {
+        bmeIaqScore = -1.0f; // Signalisiert "Wird ermittelt / Stabilisierung"
+      }
     } else {
-      bmeIaqScore = -1.0f; // Signalisiert "Wird ermittelt / Stabilisierung"
+      bmeIaqScore = -1.0f; // Erzwinge Stabilisierungs-Anzeige während der Aufwärmphase
     }
   }
 }
