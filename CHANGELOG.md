@@ -10,6 +10,9 @@ Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1.0.0
 
 ## [Unreleased]
 
+### Neu
+- **30-Tage Umweltdaten-Historie:** Die Uhr protokolliert nun im Hintergrund das Raumklima für einen ganzen Monat. Das System errechnet automatisch die Durchschnitte für den Tag (06:00 bis 18:00 Uhr) und die Nacht (18:00 bis 06:00 Uhr) und speichert diese fortlaufend auf dem internen LittleFS (`/bme_month.bin`). Das Web-UI wurde um 4 neue Diagramme erweitert, welche die Historie als überlagerte Doppel-Kurve visualisieren. (Ref: a41cb32)
+
 ### Geändert
 - **IAQ Algorithmus robuster im Dauerbetrieb:** Der BME680-Algorithmus wurde auf Industrie-Standards umgestellt. Der Gaswiderstand wird nun anhand der *absoluten Luftfeuchtigkeit* physikalisch kompensiert, wodurch abendliche Feuchtigkeitsschwankungen (z.B. am offenen Fenster) nicht mehr fälschlicherweise als Verschmutzung gewertet werden. Zudem wird anstelle eines starr gespeicherten Höchstwerts nun eine träge, exponentiell gleitende Baseline (EMA) berechnet. Das System kalibriert sich dadurch im 24/7-Dauerbetrieb fließend selbst und speichert den Stand im LittleFS. (Ref: 56f8fb6)
 

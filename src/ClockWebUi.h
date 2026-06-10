@@ -137,6 +137,13 @@ static void handleRoot() {
           "renderC('c_humi',d,'h','#84cc16','%');"
           "renderC('c_pres',d,'p','#f97316','hPa');"
           "renderC('c_iaq',d,'i','#ef4444','');"
+          "}).catch(e=>console.error(e));"
+          "fetch('/api/history_month').then(r=>r.json()).then(d=>{"
+          "if(!d||!d.length)return;"
+          "renderCMonth('cm_temp',d,'td','tn','#facc15','#3b82f6','\u00B0C');"
+          "renderCMonth('cm_humi',d,'hd','hn','#a3e635','#4d7c0f','%');"
+          "renderCMonth('cm_pres',d,'pd','pn','#fb923c','#c2410c','hPa');"
+          "renderCMonth('cm_iaq',d,'id','in','#f87171','#b91c1c','');"
           "}).catch(e=>console.error(e));}"
           "function renderC(id,data,key,col,unit){"
           "var el=document.getElementById(id); if(!el)return;"
@@ -161,6 +168,28 @@ static void handleRoot() {
           "'<text class=\"chart-lbl\" x=\"0\" y=\"'+(h-pad-4)+'\">'+min.toFixed(1)+unit+'</text>'+"
           "'<text class=\"chart-lbl\" x=\"0\" y=\"'+(h-2)+'\">-24h</text>'+"
           "'<text class=\"chart-lbl\" x=\"'+(w/2-15)+'\" y=\"'+(h-2)+'\">-12h</text>'+"
+          "'<text class=\"chart-lbl\" x=\"'+(w-35)+'\" y=\"'+(h-2)+'\">JETZT</text>'+"
+          "'</svg>';"
+          "el.innerHTML=svg;}"
+          "function renderCMonth(id,data,kd,kn,cd,cn,unit){"
+          "var el=document.getElementById(id); if(!el)return;"
+          "var w=el.clientWidth, h=el.clientHeight, pad=20, slots=29;"
+          "var vd=data.map(e=>e[kd]), vn=data.map(e=>e[kn]);"
+          "var min=Math.min(...vd,...vn), max=Math.max(...vd,...vn);"
+          "if(max==min){min-=1;max+=1;} var ran=max-min;"
+          "var pts_d=vd.map((v,i)=>({x:((slots-(data.length-1-i))/slots)*w, y:h-pad-((v-min)/ran)*(h-pad*2)}));"
+          "var dLine_d='M'+pts_d.map(p=>p.x+','+p.y).join('L');"
+          "var pts_n=vn.map((v,i)=>({x:((slots-(data.length-1-i))/slots)*w, y:h-pad-((v-min)/ran)*(h-pad*2)}));"
+          "var dLine_n='M'+pts_n.map(p=>p.x+','+p.y).join('L');"
+          "var svg='<svg viewBox=\"0 0 '+w+' '+h+'\">'+"
+          "'<line class=\"chart-grid\" x1=\"0\" y1=\"'+(h-pad)+'\" x2=\"'+w+'\" y2=\"'+(h-pad)+'\"/>'+"
+          "'<line class=\"chart-grid\" x1=\"0\" y1=\"'+pad+'\" x2=\"'+w+'\" y2=\"'+pad+'\"/>'+"
+          "'<line class=\"chart-grid\" x1=\"'+(w*0.5)+'\" y1=\"'+pad+'\" x2=\"'+(w*0.5)+'\" y2=\"'+(h-pad)+'\"/>'+"
+          "'<path class=\"chart-line\" d=\"'+dLine_d+'\" stroke=\"'+cd+'\" stroke-width=\"2\" fill=\"none\"/>'+"
+          "'<path class=\"chart-line\" d=\"'+dLine_n+'\" stroke=\"'+cn+'\" stroke-width=\"2\" fill=\"none\"/>'+"
+          "'<text class=\"chart-lbl\" x=\"0\" y=\"'+(pad-4)+'\">'+max.toFixed(1)+unit+'</text>'+"
+          "'<text class=\"chart-lbl\" x=\"0\" y=\"'+(h-pad-4)+'\">'+min.toFixed(1)+unit+'</text>'+"
+          "'<text class=\"chart-lbl\" x=\"0\" y=\"'+(h-2)+'\">-30T</text>'+"
           "'<text class=\"chart-lbl\" x=\"'+(w-35)+'\" y=\"'+(h-2)+'\">JETZT</text>'+"
           "'</svg>';"
           "el.innerHTML=svg;}"
@@ -563,6 +592,15 @@ static void handleRoot() {
   chunk(F("</div><div class='row2'>"));
   chunk(F("<div class='chart-wrap'><label>Luftdruck (hPa)</label><div id='c_pres' class='chart'></div></div>"));
   chunk(F("<div class='chart-wrap'><label>Luftqualität (IAQ)</label><div id='c_iaq' class='chart'></div></div>"));
+  chunk(F("</div>"));
+
+  chunk(F("<h3>30-Tage Trend (Tag/Nacht)</h3>"));
+  chunk(F("<div class='row2'>"));
+  chunk(F("<div class='chart-wrap'><label>Temperatur (\u00B0C)</label><div id='cm_temp' class='chart'></div></div>"));
+  chunk(F("<div class='chart-wrap'><label>Luftfeuchtigkeit (%)</label><div id='cm_humi' class='chart'></div></div>"));
+  chunk(F("</div><div class='row2'>"));
+  chunk(F("<div class='chart-wrap'><label>Luftdruck (hPa)</label><div id='cm_pres' class='chart'></div></div>"));
+  chunk(F("<div class='chart-wrap'><label>Luftqualität (IAQ)</label><div id='cm_iaq' class='chart'></div></div>"));
   chunk(F("</div>"));
 
   chunk(F("</div>")); // panel env
@@ -1164,9 +1202,32 @@ static void handleApiHistory() {
   server.sendContent("");
 }
 
+static void handleApiHistoryMonth() {
+  server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+  server.send(200, F("application/json"), "");
+  server.sendContent(F("["));
+  
+  char buf[200];
+  for (uint16_t i = 0; i < bmeMonthCount; i++) {
+    uint16_t idx = (bmeMonthIdx - bmeMonthCount + i + 30) % 30;
+    BmeMonthEntry &e = bmeMonthHistory[idx];
+    
+    snprintf(buf, sizeof(buf), "{\"td\":%.1f,\"tn\":%.1f,\"hd\":%.1f,\"hn\":%.1f,\"pd\":%.1f,\"pn\":%.1f,\"id\":%.0f,\"in\":%.0f}",
+             e.temp_day, e.temp_night, e.humi_day, e.humi_night, e.pres_day, e.pres_night, e.iaq_day, e.iaq_night);
+    server.sendContent(buf);
+    
+    if (i < bmeMonthCount - 1) server.sendContent(F(","));
+    if (i % 5 == 0) yield();
+  }
+  
+  server.sendContent(F("]"));
+  server.sendContent("");
+}
+
 static void setupWeb() {
   server.on(F("/"),            handleRoot);
   server.on(F("/api/history"), handleApiHistory);
+  server.on(F("/api/history_month"), handleApiHistoryMonth);
   server.on(F("/save"),        HTTP_POST, handleSave);
   server.on(F("/apply"),       HTTP_POST, handleApply);
   server.on(F("/applyreboot"), HTTP_POST, handleApplyReboot);

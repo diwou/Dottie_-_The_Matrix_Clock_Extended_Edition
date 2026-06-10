@@ -96,6 +96,22 @@ static uint32_t     lastBmeHistMs = 0;
 static uint32_t     lastBmeSaveMs = 0;
 static String       lastBmeSaveTime = F("noch nie");
 
+// ============================================================
+// Umweltdaten-Historie (30 Tage / Tag-Nacht)
+// ============================================================
+struct BmeMonthEntry {
+  float temp_day, temp_night;
+  float humi_day, humi_night;
+  float pres_day, pres_night;
+  float iaq_day, iaq_night;
+};
+static BmeMonthEntry bmeMonthHistory[30];
+static uint8_t       bmeMonthIdx = 0;
+static uint8_t       bmeMonthCount = 0;
+static float         bmeSumTemp = 0, bmeSumHumi = 0, bmeSumPres = 0, bmeSumIaq = 0;
+static int           bmeSumCount = 0;
+static int           bmeLastPhase = -1; // 0=Nacht(18-06), 1=Tag(06-18)
+
 // I2C Mutex für Thread-Safety (ESP32 Multi-Core)
 #if defined(ARDUINO_ARCH_ESP32)
 static SemaphoreHandle_t i2cMutex = nullptr;
@@ -472,6 +488,14 @@ static void saveHistory() {
     f2.close();
   }
 
+  File fMonth = LittleFS.open("/bme_month.bin", "w");
+  if (fMonth) {
+    fMonth.write((uint8_t*)&bmeMonthIdx, sizeof(bmeMonthIdx));
+    fMonth.write((uint8_t*)&bmeMonthCount, sizeof(bmeMonthCount));
+    fMonth.write((uint8_t*)bmeMonthHistory, sizeof(bmeMonthHistory));
+    fMonth.close();
+  }
+
   time_t t_now = time(nullptr);
   if (t_now > 1700000000UL) {
     struct tm tm_l;
@@ -491,6 +515,18 @@ static void loadHistory() {
       f2.read((uint8_t*)&bmeGasBaseline, sizeof(bmeGasBaseline));
     }
     if (f2) f2.close();
+  }
+
+  if (LittleFS.exists("/bme_month.bin")) {
+    File fMonth = LittleFS.open("/bme_month.bin", "r");
+    if (fMonth) {
+      if (fMonth.size() == sizeof(bmeMonthIdx) + sizeof(bmeMonthCount) + sizeof(bmeMonthHistory)) {
+        fMonth.read((uint8_t*)&bmeMonthIdx, sizeof(bmeMonthIdx));
+        fMonth.read((uint8_t*)&bmeMonthCount, sizeof(bmeMonthCount));
+        fMonth.read((uint8_t*)bmeMonthHistory, sizeof(bmeMonthHistory));
+      }
+      fMonth.close();
+    }
   }
 
   if (!LittleFS.exists(BME_HISTORY_FILE)) return;
@@ -513,6 +549,48 @@ static void updateHistory() {
     bmeHistory[bmeHistIdx] = { bmeTemp, bmeHumi, bmePres, bmeIaqScore };
     bmeHistIdx = (bmeHistIdx + 1) % BME_HIST_POINTS;
     if (bmeHistCount < BME_HIST_POINTS) bmeHistCount++;
+
+    time_t t_now = time(nullptr);
+    if (t_now > 1700000000UL) {
+      struct tm tm_l;
+      localtime_r(&t_now, &tm_l);
+      int currentPhase = (tm_l.tm_hour >= 6 && tm_l.tm_hour < 18) ? 1 : 0;
+      
+      if (bmeLastPhase == -1) bmeLastPhase = currentPhase;
+      
+      if (currentPhase != bmeLastPhase) {
+        if (bmeSumCount > 0) {
+          float avgTemp = bmeSumTemp / bmeSumCount;
+          float avgHumi = bmeSumHumi / bmeSumCount;
+          float avgPres = bmeSumPres / bmeSumCount;
+          float avgIaq  = bmeSumIaq / bmeSumCount;
+          
+          if (bmeLastPhase == 1) { // War Tag
+            bmeMonthHistory[bmeMonthIdx].temp_day = avgTemp;
+            bmeMonthHistory[bmeMonthIdx].humi_day = avgHumi;
+            bmeMonthHistory[bmeMonthIdx].pres_day = avgPres;
+            bmeMonthHistory[bmeMonthIdx].iaq_day  = avgIaq;
+          } else { // War Nacht
+            bmeMonthHistory[bmeMonthIdx].temp_night = avgTemp;
+            bmeMonthHistory[bmeMonthIdx].humi_night = avgHumi;
+            bmeMonthHistory[bmeMonthIdx].pres_night = avgPres;
+            bmeMonthHistory[bmeMonthIdx].iaq_night  = avgIaq;
+            
+            bmeMonthIdx = (bmeMonthIdx + 1) % 30;
+            if (bmeMonthCount < 30) bmeMonthCount++;
+          }
+        }
+        bmeSumTemp = 0; bmeSumHumi = 0; bmeSumPres = 0; bmeSumIaq = 0;
+        bmeSumCount = 0;
+        bmeLastPhase = currentPhase;
+      }
+      
+      bmeSumTemp += bmeTemp;
+      bmeSumHumi += bmeHumi;
+      bmeSumPres += bmePres;
+      if (bmeIaqScore >= 0) bmeSumIaq += bmeIaqScore;
+      bmeSumCount++;
+    }
 
     // Alle 60 Min wegspeichern
     if (now - lastBmeSaveMs >= 3600000) {
