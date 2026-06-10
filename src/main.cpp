@@ -466,6 +466,12 @@ static void saveHistory() {
   f.write((uint8_t*)bmeHistory, sizeof(bmeHistory));
   f.close();
 
+  File f2 = LittleFS.open("/bme_base.bin", "w");
+  if (f2) {
+    f2.write((uint8_t*)&bmeGasBaseline, sizeof(bmeGasBaseline));
+    f2.close();
+  }
+
   time_t t_now = time(nullptr);
   if (t_now > 1700000000UL) {
     struct tm tm_l;
@@ -479,6 +485,14 @@ static void saveHistory() {
 }
 
 static void loadHistory() {
+  if (LittleFS.exists("/bme_base.bin")) {
+    File f2 = LittleFS.open("/bme_base.bin", "r");
+    if (f2 && f2.size() == sizeof(bmeGasBaseline)) {
+      f2.read((uint8_t*)&bmeGasBaseline, sizeof(bmeGasBaseline));
+    }
+    if (f2) f2.close();
+  }
+
   if (!LittleFS.exists(BME_HISTORY_FILE)) return;
   File f = LittleFS.open(BME_HISTORY_FILE, "r");
   if (!f) return;
@@ -529,8 +543,16 @@ static void updateBme680() {
     // Erst nach 3 Minuten (180s) Aufwärmzeit ist der Sensor stabil genug für die Baseline
     if (millis() > 180000) {
       if (gas_res > 0.1f) {
-        if (bmeGasBaseline < 0.1f || gas_res > bmeGasBaseline) {
+        if (bmeGasBaseline < 0.1f) {
           bmeGasBaseline = gas_res;
+        } else if (gas_res > bmeGasBaseline) {
+          // Schnelles Lernen neuer Spitzenwerte, aber geglättet gegen Rauschen
+          bmeGasBaseline = (bmeGasBaseline * 0.90f) + (gas_res * 0.10f);
+        } else {
+          // Langsames Vergessen (Decay) zur Kompensation von Klimaveränderungen.
+          // 0.2% Anpassung alle 30s. Ein Klima-Umschwung wird so über Stunden normalisiert,
+          // kurzfristige Verunreinigungen bleiben aber korrekt "schlecht".
+          bmeGasBaseline -= (bmeGasBaseline - gas_res) * 0.002f;
         }
       }
     }
