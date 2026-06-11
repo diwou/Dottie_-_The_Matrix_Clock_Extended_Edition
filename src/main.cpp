@@ -630,9 +630,13 @@ static void updateBme680() {
         if (bmeGasBaseline < 0.1f) {
           bmeGasBaseline = comp_gas;
         } else {
-          // Träger EMA (symmetrisch): Langsamer Durchschnitt über ca. 1-2 Stunden.
-          // Alpha = 0.005 dämpft kurzfristige Spikes komplett aus, lernt aber das Klima
-          bmeGasBaseline = (bmeGasBaseline * 0.995f) + (comp_gas * 0.005f);
+          // Baseline merkt sich den "saubersten" (höchsten) Widerstand.
+          if (comp_gas > bmeGasBaseline) {
+            bmeGasBaseline = comp_gas; // Sofort neuer Rekord!
+          } else {
+            // Nur sehr langsamer Verfall nach unten (falls der Sensor altert)
+            bmeGasBaseline = (bmeGasBaseline * 0.999f) + (comp_gas * 0.001f);
+          }
         }
       }
 
@@ -643,9 +647,13 @@ static void updateBme680() {
         if (bmeHumi >= hum_ref) hum_score = (100.0f - bmeHumi) / (100.0f - hum_ref);
         else hum_score = (bmeHumi / hum_ref);
         hum_score *= 100.0f;
+        if (hum_score > 100.0f) hum_score = 100.0f;
 
         float gas_score = (comp_gas / bmeGasBaseline) * 100.0f;
+        if (gas_score > 100.0f) gas_score = 100.0f;
+        
         float air_quality_score = (hum_score * 0.25f) + (gas_score * 0.75f);
+        if (air_quality_score > 100.0f) air_quality_score = 100.0f;
         
         // Umrechnung auf Bosch-Skala 0-500 (invertiert: 100% Qualität = 0 IAQ)
         bmeIaqScore = (100.0f - air_quality_score) * 5.0f;
