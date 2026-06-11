@@ -14,6 +14,7 @@ Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1.0.0
 - **30-Tage Umweltdaten-Historie:** Die Uhr protokolliert nun im Hintergrund das Raumklima für einen ganzen Monat. Das System errechnet automatisch die Durchschnitte für den Tag (06:00 bis 18:00 Uhr) und die Nacht (18:00 bis 06:00 Uhr) und speichert diese fortlaufend auf dem internen LittleFS (`/bme_month.bin`). Das Web-UI wurde um 4 neue Diagramme erweitert, welche die Historie als überlagerte Doppel-Kurve visualisieren. (Ref: 3116267)
 
 ### Behoben
+- **Leere 30-Tage Diagramme am ersten Tag (UI):** Das Web-Interface zeichnet nun kleine Punkte auf den Datenlinien der 30-Tage Historie. Dadurch ist ein einzelner gespeicherter Tag (der keine Verbindungslinie zu einem anderen Punkt aufbauen kann) nicht mehr unsichtbar.
 - **Fehlerhafte IAQ-Stabilisierungs-Anzeige:** Bei extrem sauberer Luft (besser als die historische Baseline) konnte die IAQ-Formel rechnerisch in den negativen Bereich kippen. Das Webinterface interpretierte dies fälschlicherweise als anhaltende Aufwärmphase ("Sensoren stabilisieren..."). Der berechnete IAQ-Score wird nun konsequent auf 0-500 begrenzt. (Ref: bd8af96)
 - **Leere 30-Tage Diagramme (UI):** Das Web-Interface zeichnet das Diagramm-Raster und die Achsenbeschriftung nun korrekt, selbst wenn am allerersten Tag nach dem Update noch gar keine Langzeit-Messwerte vorliegen. (Ref: 9cd1d99)
 
