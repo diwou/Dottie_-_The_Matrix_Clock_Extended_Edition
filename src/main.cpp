@@ -656,9 +656,17 @@ static void updateBme680() {
         if (air_quality_score > 100.0f) air_quality_score = 100.0f;
         
         // Umrechnung auf Bosch-Skala 0-500 (invertiert: 100% Qualität = 0 IAQ)
-        bmeIaqScore = (100.0f - air_quality_score) * 5.0f;
-        if (bmeIaqScore < 0.0f) bmeIaqScore = 0.0f;
-        if (bmeIaqScore > 500.0f) bmeIaqScore = 500.0f;
+        float currentIaq = (100.0f - air_quality_score) * 5.0f;
+        if (currentIaq < 0.0f) currentIaq = 0.0f;
+        if (currentIaq > 500.0f) currentIaq = 500.0f;
+        
+        // Glättungs-Filter (EMA), um extrem wilde Zacken durch thermisches Rauschen abzufangen
+        if (bmeIaqScore < 0.0f) {
+          bmeIaqScore = currentIaq; // Initialer Startwert nach der Aufwärmphase
+        } else {
+          // Dämpfung: 80% des alten Werts werden beibehalten, 20% des neuen kommen hinzu.
+          bmeIaqScore = (bmeIaqScore * 0.8f) + (currentIaq * 0.2f);
+        }
       } else {
         bmeIaqScore = -1.0f; // Signalisiert "Wird ermittelt / Stabilisierung"
       }

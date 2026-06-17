@@ -10,8 +10,9 @@ Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1.0.0
 
 ## [Unreleased]
 
-### Neu
-- **30-Tage Umweltdaten-Historie:** Die Uhr protokolliert nun im Hintergrund das Raumklima für einen ganzen Monat. Das System errechnet automatisch die Durchschnitte für den Tag (06:00 bis 18:00 Uhr) und die Nacht (18:00 bis 06:00 Uhr) und speichert diese fortlaufend auf dem internen LittleFS (`/bme_month.bin`). Das Web-UI wurde um 4 neue Diagramme erweitert, welche die Historie als überlagerte Doppel-Kurve visualisieren. (Ref: 3116267)
+### Hinzugefügt
+- **IAQ-Glättung (Filter):** Ein EMA-Filter (Exponential Moving Average) dämpft nun extrem kurzfristiges thermisches Rauschen bei der Berechnung der Luftqualität, sodass die rote Linie im Chart wesentlich ruhiger und lesbarer verläuft. (Ref: 45e5efc)
+- **Historie der Umweltdaten (30 Tage Trend):** Neue Diagramme unterhalb der 24h-Historie zeigen nun zusätzlich einen Trend über 30 Tage. Pro Diagramm werden eine Tages- und eine Nacht-Kurve (gemittelt) eingezeichnet, um langfristige Tendenzen (z.B. Heizverhalten oder Lüftungstrends über Wochen) optimal sichtbar zu machen. Die Datensicherung erfolgt 1x stündlich ausfallsicher ins LittleFS (`/bme_month.bin`). (Ref: a91db9c)
 
 ### Behoben
 - **Leere 30-Tage Diagramme am ersten Tag (UI):** Das Web-Interface zeichnet nun kleine Punkte auf den Datenlinien der 30-Tage Historie. Dadurch ist ein einzelner gespeicherter Tag (der keine Verbindungslinie zu einem anderen Punkt aufbauen kann) nicht mehr unsichtbar.
