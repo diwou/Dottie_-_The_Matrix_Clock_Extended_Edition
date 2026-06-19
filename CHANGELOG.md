@@ -11,8 +11,8 @@ Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1.0.0
 ## [Unreleased]
 
 ### Hinzugefügt
-- **Umweltsensoren UI:** Die Web-Oberfläche zeigt nun zusätzlich zur Luftfeuchtigkeit in Prozent einen qualitativen Statustext mit Farbkodierung (z.B. "Optimal", "Zu trocken") sowie neben dem Luftdruck einen Trendpfeil (steigend, fallend, gleichbleibend) basierend auf dem Verlauf der letzten 3 Stunden an. (Ref: pending)
-- **IAQ-Glättung (Filter):** Ein EMA-Filter (Exponential Moving Average) dämpft nun extrem kurzfristiges thermisches Rauschen bei der Berechnung der Luftqualität, sodass die rote Linie im Chart wesentlich ruhiger und lesbarer verläuft. Die Trägheit wurde nochmals stark erhöht (98%/2%), um das 5-Minuten-Rauschen in der Historie zuverlässig zu filtern. (Ref: c9dc70c)
+- **Umweltsensoren UI:** Die Web-Oberfläche zeigt nun zusätzlich zur Luftfeuchtigkeit in Prozent einen qualitativen Statustext mit Farbkodierung (z.B. "Optimal", "Zu trocken") sowie neben dem Luftdruck einen Trendpfeil (steigend, fallend, gleichbleibend) basierend auf dem Verlauf der letzten 3 Stunden an. (Ref: e0116df)
+- **IAQ-Glättung (Filter):** Für die 24h-Historie wird nun konsequent ein echter 5-Minuten-Durchschnitt (anstelle von Momentanwerten) berechnet, um das starke thermische Rauschen aus den Diagrammen zu filtern. Die Live-Anzeige im WebUI behält dadurch ihre reaktionsschnelle (80/20) Filterung. (Ref: 6aec7d9)
 - **Historie der Umweltdaten (30 Tage Trend):** Neue Diagramme unterhalb der 24h-Historie zeigen nun zusätzlich einen Trend über 30 Tage. Pro Diagramm werden eine Tages- und eine Nacht-Kurve (gemittelt) eingezeichnet, um langfristige Tendenzen (z.B. Heizverhalten oder Lüftungstrends über Wochen) optimal sichtbar zu machen. Die Datensicherung erfolgt 1x stündlich ausfallsicher ins LittleFS (`/bme_month.bin`). (Ref: a91db9c)
 
 ### Behoben
