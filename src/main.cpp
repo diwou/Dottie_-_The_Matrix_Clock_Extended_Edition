@@ -110,8 +110,7 @@ static uint8_t       bmeMonthIdx = 0;
 static uint8_t       bmeMonthCount = 0;
 static float         bmeSumTemp = 0, bmeSumHumi = 0, bmeSumPres = 0, bmeSumIaq = 0;
 static int           bmeSumCount = 0;
-static float         bmeSumIaq5min = 0;
-static int           bmeSumCount5min = 0;
+static float         bmeIaqDiagram = -1.0f;
 static int           bmeLastPhase = -1; // 0=Nacht(18-06), 1=Tag(06-18)
 
 // I2C Mutex für Thread-Safety (ESP32 Multi-Core)
@@ -548,13 +547,18 @@ static void updateHistory() {
   lastBmeHistMs = now;
 
   if (isfinite(bmeTemp) && isfinite(bmeHumi) && isfinite(bmePres)) {
-    float avgIaq5min = bmeIaqScore;
-    if (bmeSumCount5min > 0) {
-      avgIaq5min = bmeSumIaq5min / bmeSumCount5min;
-      bmeSumIaq5min = 0;
-      bmeSumCount5min = 0;
+    float histIaq = bmeIaqDiagram;
+    if (histIaq < 0.0f) {
+      if (bmeHistCount > 0) {
+        int prevIdx = (bmeHistIdx + BME_HIST_POINTS - 1) % BME_HIST_POINTS;
+        histIaq = bmeHistory[prevIdx].iaq;
+      } else {
+        histIaq = 0.0f;
+      }
     }
-    bmeHistory[bmeHistIdx] = { bmeTemp, bmeHumi, bmePres, avgIaq5min };
+    if (histIaq < 0.0f) histIaq = 0.0f;
+    
+    bmeHistory[bmeHistIdx] = { bmeTemp, bmeHumi, bmePres, histIaq };
     bmeHistIdx = (bmeHistIdx + 1) % BME_HIST_POINTS;
     if (bmeHistCount < BME_HIST_POINTS) bmeHistCount++;
 
@@ -675,8 +679,13 @@ static void updateBme680() {
           // Dämpfung: 80% des alten Werts werden beibehalten, 20% des neuen kommen hinzu (angenehm für Live-Ansicht).
           bmeIaqScore = (bmeIaqScore * 0.80f) + (currentIaq * 0.20f);
         }
-        bmeSumIaq5min += currentIaq;
-        bmeSumCount5min++;
+        
+        // Völlig isolierter Filter (99%/1%) nur für das 24h-Diagramm, um maximale Glättung zu erreichen
+        if (bmeIaqDiagram < 0.0f) {
+          bmeIaqDiagram = currentIaq;
+        } else {
+          bmeIaqDiagram = (bmeIaqDiagram * 0.99f) + (currentIaq * 0.01f);
+        }
       } else {
         bmeIaqScore = -1.0f; // Signalisiert "Wird ermittelt / Stabilisierung"
       }
