@@ -664,8 +664,8 @@ static void updateBme680() {
         if (bmeIaqScore < 0.0f) {
           bmeIaqScore = currentIaq; // Initialer Startwert nach der Aufwärmphase
         } else {
-          // Dämpfung: 80% des alten Werts werden beibehalten, 20% des neuen kommen hinzu.
-          bmeIaqScore = (bmeIaqScore * 0.8f) + (currentIaq * 0.2f);
+          // Dämpfung: 98% des alten Werts werden beibehalten, 2% des neuen kommen hinzu (sehr träge, ignoriert kurzes Rauschen).
+          bmeIaqScore = (bmeIaqScore * 0.98f) + (currentIaq * 0.02f);
         }
       } else {
         bmeIaqScore = -1.0f; // Signalisiert "Wird ermittelt / Stabilisierung"

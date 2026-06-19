@@ -382,8 +382,12 @@ static void handleRoot() {
           "if(et)et.textContent=d.bme_temp>-100?d.bme_temp.toFixed(1)+' \u00B0C':'-';"
           "var eh=document.getElementById('v-bme-humi');"
           "if(eh)eh.textContent=d.bme_humi>=0?d.bme_humi.toFixed(1)+' %':'-';"
+          "var eht=document.getElementById('v-bme-humi-text');"
+          "if(eht){eht.textContent=d.bme_humi_text||''; eht.style.color=d.bme_humi_color||'';}"
           "var ep=document.getElementById('v-bme-pres');"
           "if(ep)ep.textContent=d.bme_pres>=0?d.bme_pres.toFixed(1)+' hPa':'-';"
+          "var ept=document.getElementById('v-bme-pres-trend');"
+          "if(ept)ept.innerHTML=d.bme_pres_trend||'';"
           "var eg=document.getElementById('v-bme-gas');"
           "if(eg)eg.textContent=d.bme_gas>=0?d.bme_gas.toFixed(1)+' kOhm':'-';"
           "var egb=document.getElementById('v-bme-baseline');"
@@ -572,8 +576,8 @@ static void handleRoot() {
           "<b>BME680 vorhanden:</b> <span id='v-bme'>-</span><br>"
           "<b>Luftqualität (IAQ):</b> <span id='v-bme-iaq'>-</span> &nbsp; <b id='v-bme-iaq-text'>-</b><br>"
           "<b>Temperatur:</b> <span id='v-bme-temp'>-</span><br>"
-          "<b>Feuchtigkeit:</b> <span id='v-bme-humi'>-</span><br>"
-          "<b>Luftdruck:</b> <span id='v-bme-pres'>-</span><br>"
+          "<b>Feuchtigkeit:</b> <span id='v-bme-humi'>-</span> &nbsp; <b id='v-bme-humi-text'></b><br>"
+          "<b>Luftdruck:</b> <span id='v-bme-pres'>-</span> &nbsp; <b id='v-bme-pres-trend'></b><br>"
           "<b>Gaswiderstand:</b> <span id='v-bme-gas'>-</span><br>"
           "<b>Referenz saubere Luft:</b> <span id='v-bme-baseline'>-</span><br>"
           "<b>Zuletzt gespeichert:</b> <span id='v-bme-save'>-</span><br>"
@@ -1103,6 +1107,34 @@ static void handleApiStatus() {
     return "Extrem schlecht";
   };
 
+  auto humiText = [](float h) -> const char* {
+    if (h < 0.0f) return "";
+    if (h < 30.0f) return "Zu trocken";
+    if (h <= 40.0f) return "Trocken";
+    if (h <= 60.0f) return "Optimal";
+    if (h <= 70.0f) return "Feucht";
+    return "Zu feucht";
+  };
+
+  auto humiColor = [](float h) -> const char* {
+    if (h < 0.0f) return "";
+    if (h < 30.0f || h > 70.0f) return "#dc2626";
+    if (h <= 40.0f || h > 60.0f) return "#eab308";
+    return "#16a34a";
+  };
+
+  String presTrend = "";
+  if (bmeHistCount >= 36) { // 3 Stunden (36 * 5 Minuten)
+    int prevIdx = (bmeHistIdx + BME_HIST_POINTS - 36) % BME_HIST_POINTS;
+    float oldPres = bmeHistory[prevIdx].pres;
+    if (isfinite(oldPres) && oldPres > 0 && isfinite(bmePres)) {
+      float diff = bmePres - oldPres;
+      if (diff > 1.0f) presTrend = "&nearr;";
+      else if (diff < -1.0f) presTrend = "&searr;";
+      else presTrend = "&rarr;";
+    }
+  }
+
   String json = "{";
   json += String(F("\"time\":\"")) + tbuf + F("\",");
   json += String(F("\"date\":\"")) + dbuf + F("\",");
@@ -1129,6 +1161,9 @@ static void handleApiStatus() {
   json += String(F("\"bme_baseline\":")) + (bmeGasBaseline > 0.1f ? String(bmeGasBaseline, 1) : String(0.0f)) + F(",");
   json += String(F("\"bme_iaq\":")) + String(bmeIaqScore, 0) + F(",");
   json += String(F("\"bme_iaq_text\":\"")) + jsonEscape(iaqText(bmeIaqScore)) + F("\",");
+  json += String(F("\"bme_humi_text\":\"")) + jsonEscape(humiText(bmeHumi)) + F("\",");
+  json += String(F("\"bme_humi_color\":\"")) + humiColor(bmeHumi) + F("\",");
+  json += String(F("\"bme_pres_trend\":\"")) + presTrend + F("\",");
   json += String(F("\"bme_last_save\":\"")) + jsonEscape(lastBmeSaveTime) + F("\",");
   json += String(F("\"rtc_present\":")) + (rtcPresent ? F("true") : F("false")) + F(",");
   json += String(F("\"rtc_ok\":")) + (rtcValid ? F("true") : F("false")) + F(",");
