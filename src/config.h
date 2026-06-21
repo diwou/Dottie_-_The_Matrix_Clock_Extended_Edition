@@ -183,6 +183,7 @@ static bool loadConfig() {
     CFG_BOOL("show_24h",     show_24h)
     CFG_BOOL("show_seconds", show_seconds)
     CFG_INT("date_fmt",      date_fmt,  uint8_t)
+    CFG_INT("elevation",     elevation, int16_t)
     CFG_INT("wifi_timeout_sec", wifi_timeout_sec, uint16_t)
     CFG_INT("ip_show_sec",      ip_show_sec,      uint16_t)
     CFG_INT("brightness",       brightness,       uint8_t)
@@ -235,6 +236,7 @@ static bool saveConfig() {
   W("show_24h",         cfg.show_24h     ? "1" : "0");
   W("show_seconds",     cfg.show_seconds ? "1" : "0");
   W("date_fmt",         cfg.date_fmt);
+  W("elevation",        cfg.elevation);
   W("ip_show_sec",      cfg.ip_show_sec);
   W("brightness",       cfg.brightness);
   W("bottom_font",      cfg.bottom_font);
