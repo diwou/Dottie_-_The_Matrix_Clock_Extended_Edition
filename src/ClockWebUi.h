@@ -369,8 +369,10 @@ static void handleRoot() {
           "if(rp)rp.textContent=d.rtc_present?'ja':'nein';"
           "var rv=document.getElementById('v-rtc-valid');"
           "if(rv)rv.textContent=d.rtc_ok?'ja':'nein';"
-          "var ri=document.getElementById('v-i2c');"
-          "if(ri)ri.textContent=d.i2c_diag||'-';"
+          "var ri1=document.getElementById('v-i2c-1');"
+          "if(ri1)ri1.textContent=d.i2c_diag||'-';"
+          "var ri2=document.getElementById('v-i2c-2');"
+          "if(ri2)ri2.textContent=d.i2c_diag||'-';"
           "var ei=document.getElementById('v-i2c-env');"
           "if(ei)ei.textContent=d.i2c_env_diag||'-';"
           "var eb=document.getElementById('v-bme');"
@@ -555,7 +557,7 @@ static void handleRoot() {
   chunk(F("<div class='stat'>"
           "<b>RTC vorhanden:</b> <span id='v-rtc-present'>-</span><br>"
           "<b>RTC gültig:</b> <span id='v-rtc-valid'>-</span><br>"
-          "<b>I2C:</b> <span id='v-i2c'>-</span><br>"
+          "<b>I2C:</b> <span id='v-i2c-1'>-</span><br>"
           "<b>Zeitquelle:</b> <span id='v-rtc-source'>-</span><br>"
           "<b>Info:</b> <span id='v-rtc-source-detail'>-</span>"
           "</div>"));
@@ -589,7 +591,7 @@ static void handleRoot() {
           "<b>Luftqualität (IAQ):</b> <span id='v-bme-iaq'>-</span> &nbsp; <b id='v-bme-iaq-text'>-</b><br>"
           "<b>Temperatur:</b> <span id='v-bme-temp'>-</span><br>"
           "<b>Feuchtigkeit:</b> <span id='v-bme-humi'>-</span> &nbsp; <b id='v-bme-humi-text'></b><br>"
-          "<b>Luftdruck:</b> <span id='v-bme-pres'>-</span> &nbsp; <b id='v-bme-pres-trend'></b><br>"
+          "<b>Luftdruck (NN):</b> <span id='v-bme-pres'>-</span> &nbsp; <b id='v-bme-pres-trend'></b><br>"
           "<b>Wetter-Tendenz:</b> <span id='v-bme-forecast'>-</span><br>"
           "<b>Taupunkt:</b> <span id='v-bme-dew'>-</span><br>"
           "<b>Gefühlt:</b> <span id='v-bme-heat'>-</span><br>"
@@ -605,7 +607,7 @@ static void handleRoot() {
           "</div>"));
   chunk(F("</div>"));
   chunk(F("<h3>I2C-Scan</h3>"));
-  chunk(F("<div class='stat'><b>RTC/Licht:</b> <span id='v-i2c'>-</span></div>"));
+  chunk(F("<div class='stat'><b>RTC/Licht:</b> <span id='v-i2c-2'>-</span></div>"));
   chunk(F("<div class='stat'><b>Umwelt:</b> <span id='v-i2c-env'>-</span></div>"));
 
   chunk(F("<h3>24h Historie</h3>"));
