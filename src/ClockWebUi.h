@@ -398,6 +398,8 @@ static void handleRoot() {
           "if(edew)edew.textContent=d.bme_dew>-100?d.bme_dew.toFixed(1)+' \u00B0C':'-';"
           "var eheat=document.getElementById('v-bme-heat');"
           "if(eheat)eheat.textContent=d.bme_heat>-100?d.bme_heat.toFixed(1)+' \u00B0C':'-';"
+          "var eabsh=document.getElementById('v-bme-abshumi');"
+          "if(eabsh)eabsh.textContent=d.bme_abs_humi>=0?d.bme_abs_humi.toFixed(1)+' g/m\u00B3':'-';"
           "var eg=document.getElementById('v-bme-gas');"
           "if(eg)eg.textContent=d.bme_gas>=0?d.bme_gas.toFixed(1)+' kOhm':'-';"
           "var egb=document.getElementById('v-bme-baseline');"
@@ -591,6 +593,7 @@ static void handleRoot() {
           "<b>Wetter-Tendenz:</b> <span id='v-bme-forecast'>-</span><br>"
           "<b>Taupunkt:</b> <span id='v-bme-dew'>-</span><br>"
           "<b>Gefühlt:</b> <span id='v-bme-heat'>-</span><br>"
+          "<b>Absolute Feuchte:</b> <span id='v-bme-abshumi'>-</span><br>"
           "<b>Gaswiderstand:</b> <span id='v-bme-gas'>-</span><br>"
           "<b>Referenz saubere Luft:</b> <span id='v-bme-baseline'>-</span><br>"
           "<b>Zuletzt gespeichert:</b> <span id='v-bme-save'>-</span><br>"
@@ -764,6 +767,12 @@ static void handleRoot() {
         checked(cfg.dark_mode) + F(" onchange='updTheme()'><label style='margin:0'>Dark Mode</label></div>"));
   chunk(F("<p class='hint'>Dunkles Theme mit reduzierter Helligkeit f&uuml;r das Webinterface, passend zu typischen Desktop- und Browser-Dark-Themes.</p>"));
 
+  chunk(F("<h3>Standort</h3>"));
+  chunk(F("<div class='row2'>"));
+  chunk(String(F("<div><label>Höhe über NN (Meter)</label>"
+                 "<input name='elevation' type='number' value='")) + cfg.elevation + F("'></div>"));
+  chunk(F("<div></div></div>"));
+  
   chunk(F("<h3>Firmware-Installer</h3>"));
   chunk(String(F("<div class='stat'>"
                  "<b>Aktuelle Firmware:</b> <span id='v-fw'>")) + htmlEscape(FPSTR(FW_VERSION)) + F("</span><br>"
@@ -848,6 +857,7 @@ static void applyFormToConfig() {
   if (server.hasArg(F("ip_show_sec")))      cfg.ip_show_sec      = (uint16_t)server.arg(F("ip_show_sec")).toInt();
 
   if (server.hasArg(F("utc_offset_min")))   cfg.utc_offset_min   = (int16_t)server.arg(F("utc_offset_min")).toInt();
+  if (server.hasArg(F("elevation")))        cfg.elevation        = (int16_t)server.arg(F("elevation")).toInt();
   if (server.hasArg(F("dst_mode")))         cfg.dst_mode         = (uint8_t)server.arg(F("dst_mode")).toInt();
   if (server.hasArg(F("dst_add_min")))      cfg.dst_add_min      = (int16_t)server.arg(F("dst_add_min")).toInt();
 
@@ -1131,8 +1141,8 @@ static void handleApiStatus() {
     if (h < 30.0f) return "Zu trocken";
     if (h <= 40.0f) return "Trocken";
     if (h <= 60.0f) return "Optimal";
-    if (h <= 70.0f) return "Feucht";
-    return "Zu feucht";
+    if (h <= 65.0f) return "Feucht";
+    return "Lüften! (Schimmelgefahr)";
   };
 
   auto humiColor = [](float h) -> const char* {
@@ -1204,6 +1214,7 @@ static void handleApiStatus() {
   json += String(F("\"bme_forecast\":\"")) + jsonEscape(forecast) + F("\",");
   json += String(F("\"bme_dew\":")) + (isfinite(bmeDew) ? String(bmeDew, 1) : String(-127.0f)) + F(",");
   json += String(F("\"bme_heat\":")) + (isfinite(bmeHeat) ? String(bmeHeat, 1) : String(-127.0f)) + F(",");
+  json += String(F("\"bme_abs_humi\":")) + (isfinite(bmeAbsHumi) ? String(bmeAbsHumi, 1) : String(-1.0f)) + F(",");
   json += String(F("\"bme_last_save\":\"")) + jsonEscape(lastBmeSaveTime) + F("\",");
   json += String(F("\"rtc_present\":")) + (rtcPresent ? F("true") : F("false")) + F(",");
   json += String(F("\"rtc_ok\":")) + (rtcValid ? F("true") : F("false")) + F(",");

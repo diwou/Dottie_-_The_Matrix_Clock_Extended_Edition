@@ -11,8 +11,10 @@ Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1.0.0
 ## [Unreleased]
 
 ### Hinzugefügt
-- **Wetter und Umweltdaten:** Berechnung von Taupunkt und Hitzeindex aus den BME680 Messwerten hinzugefügt. Implementierung einer barometrischen Wettervorhersage (Zambretti-Ansatz).
-- **WebUI Erweiterung:** Anzeige von Taupunkt, Gefühlter Temperatur (Hitzeindex) und einer Text-Wettervorhersage in den Umweltdaten.
+- **Wetter und Umweltdaten:** Berechnung von Taupunkt, Hitzeindex und der absoluten Luftfeuchtigkeit (in g/m³) aus den BME680 Messwerten hinzugefügt. Implementierung einer barometrischen Wettervorhersage (Zambretti-Ansatz).
+- **WebUI Erweiterung:** Anzeige von absoluter Feuchtigkeit, Taupunkt, Gefühlter Temperatur (Hitzeindex) und einer Text-Wettervorhersage in den Umweltdaten.
+- **Druckkorrektur & Schimmelwarnung:** Der Luftdruck wird nun anhand einer konfigurierbaren Höhe über NN (im UI unter System > Standort einstellbar) auf Meereshöhe umgerechnet. Bei einer relativen Luftfeuchtigkeit über 65% wird nun eine Schimmel-Warnung (Lüftungsempfehlung) angezeigt.
+- **I2C Diagnose:** Die I2C Diagnose-Anzeige für RTC und Lichtsensor im WebUI zeigt nun ordnungsgemäß die gefundenen Adressen statt eines Platzhalters an (z.B. VEML7700@0x10=0, DS3231@0x68=0).
 - **Erweiterte Historie:** Die 24h-Diagramme und 30-Tage-Trends zeigen nun auch Graphen für Taupunkt und Hitzeindex. (Achtung: Dies erforderte eine Änderung der Speicherstruktur, alte Historien-Daten wurden beim Boot zurückgesetzt).
 - **Umweltsensoren UI:** Die Web-Oberfläche zeigt nun zusätzlich zur Luftfeuchtigkeit in Prozent einen qualitativen Statustext mit Farbkodierung (z.B. "Optimal", "Zu trocken") sowie neben dem Luftdruck einen Trendpfeil (steigend, fallend, gleichbleibend) basierend auf dem Verlauf der letzten 3 Stunden an. (Ref: e0116df)
 - **IAQ-Glättung (Filter):** Für das 24h-Diagramm wird nun ein komplett isolierter, extremer EMA-Filter (99% Trägheit) verwendet, um das Live-Rauschen vor der Speicherung perfekt weichzuzeichnen. Aufwärmwerte (-1.0) werden abgefangen, um die Y-Achse nicht zu ruinieren. Die Web-Anzeige reagiert weiterhin flott (80/20). (Ref: 54fb449)

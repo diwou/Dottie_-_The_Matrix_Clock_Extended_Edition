@@ -63,6 +63,7 @@ struct Config {
   uint8_t  date_fmt         = 0;   // 0=DD.MM.YYYY 1=MM/DD/YYYY 2=YYYY-MM-DD 3=DD.MM.YY 4=MM/DD/YY
 
   // Sonstiges
+  int16_t  elevation        = 0;  // Höhe über NN in Metern für Luftdruckkorrektur
   uint16_t wifi_timeout_sec = 30;
   uint16_t ip_show_sec      = 3;
   uint8_t  brightness       = 1;  // 0..15

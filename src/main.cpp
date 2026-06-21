@@ -117,6 +117,7 @@ static int           bmeSumCount = 0;
 static float         bmeIaqDiagram = -1.0f;
 static float         bmeDew = 0.0f;
 static float         bmeHeat = 0.0f;
+static float         bmeAbsHumi = -1.0f;
 static int           bmeLastPhase = -1; // 0=Nacht(18-06), 1=Tag(06-18)
 
 
@@ -382,7 +383,7 @@ static void setupLightSensor() {
   dsProbe = Wire.endTransmission(true);
   ds3231Present = (dsProbe == 0);
 
-  i2cDiag = String(F("VEML=")) + probe + F(" @0x10, DS3231=") + dsProbe + F(" @0x68");
+  i2cDiag = String(F("VEML7700@0x10=")) + probe + F(", DS3231@0x68=") + dsProbe;
 
   vemlOk = (probe == 0) && veml.begin();
   if (vemlOk) {
@@ -640,7 +641,9 @@ static void updateBme680() {
   if (ok) {
     bmeTemp = bme.temperature;
     bmeHumi = bme.humidity;
-    bmePres = bme.pressure / 100.0f;
+    float rawPres = bme.pressure / 100.0f;
+    float h_m = (float)cfg.elevation;
+    bmePres = rawPres * pow(1.0f - (0.0065f * h_m) / (bmeTemp + 0.0065f * h_m + 273.15f), -5.257f);
     float raw_gas = bme.gas_resistance / 1000.0f;
     
     // 0. Taupunkt und Hitzeindex berechnen
@@ -660,6 +663,7 @@ static void updateBme680() {
     
     // 1. Absolute Feuchtigkeit (AH) in g/m³ berechnen
     float ah = (6.112f * exp((17.67f * bmeTemp)/(bmeTemp + 243.5f)) * bmeHumi * 2.1674f) / (273.15f + bmeTemp);
+    bmeAbsHumi = ah;
     
     // 2. Gaswiderstand auf Referenz-Klima (AH_ref = 10.0 g/m³) kompensieren (k=0.04)
     float comp_gas = raw_gas * exp(0.04f * (ah - 10.0f));
