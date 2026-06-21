@@ -137,12 +137,16 @@ static void handleRoot() {
           "renderC('c_humi',d,'h','#84cc16','%');"
           "renderC('c_pres',d,'p','#f97316','hPa');"
           "renderC('c_iaq',d,'i','#ef4444','');"
+          "renderC('c_dew',d,'d','#0ea5e9','\u00B0C');"
+          "renderC('c_heat',d,'x','#a855f7','\u00B0C');"
           "}).catch(e=>console.error(e));"
           "fetch('/api/history_month').then(r=>r.json()).then(d=>{"
           "renderCMonth('cm_temp',d,'td','tn','#facc15','#3b82f6','\u00B0C');"
           "renderCMonth('cm_humi',d,'hd','hn','#a3e635','#4d7c0f','%');"
           "renderCMonth('cm_pres',d,'pd','pn','#fb923c','#c2410c','hPa');"
           "renderCMonth('cm_iaq',d,'id','in','#f87171','#b91c1c','');"
+          "renderCMonth('cm_dew',d,'dd','dn','#38bdf8','#0284c7','\u00B0C');"
+          "renderCMonth('cm_heat',d,'xd','xn','#c084fc','#7e22ce','\u00B0C');"
           "}).catch(e=>console.error(e));}"
           "function renderC(id,data,key,col,unit){"
           "var el=document.getElementById(id); if(!el)return;"
@@ -388,6 +392,12 @@ static void handleRoot() {
           "if(ep)ep.textContent=d.bme_pres>=0?d.bme_pres.toFixed(1)+' hPa':'-';"
           "var ept=document.getElementById('v-bme-pres-trend');"
           "if(ept)ept.innerHTML=d.bme_pres_trend||'';"
+          "var efor=document.getElementById('v-bme-forecast');"
+          "if(efor)efor.textContent=d.bme_forecast||'-';"
+          "var edew=document.getElementById('v-bme-dew');"
+          "if(edew)edew.textContent=d.bme_dew>-100?d.bme_dew.toFixed(1)+' \u00B0C':'-';"
+          "var eheat=document.getElementById('v-bme-heat');"
+          "if(eheat)eheat.textContent=d.bme_heat>-100?d.bme_heat.toFixed(1)+' \u00B0C':'-';"
           "var eg=document.getElementById('v-bme-gas');"
           "if(eg)eg.textContent=d.bme_gas>=0?d.bme_gas.toFixed(1)+' kOhm':'-';"
           "var egb=document.getElementById('v-bme-baseline');"
@@ -578,6 +588,9 @@ static void handleRoot() {
           "<b>Temperatur:</b> <span id='v-bme-temp'>-</span><br>"
           "<b>Feuchtigkeit:</b> <span id='v-bme-humi'>-</span> &nbsp; <b id='v-bme-humi-text'></b><br>"
           "<b>Luftdruck:</b> <span id='v-bme-pres'>-</span> &nbsp; <b id='v-bme-pres-trend'></b><br>"
+          "<b>Wetter-Tendenz:</b> <span id='v-bme-forecast'>-</span><br>"
+          "<b>Taupunkt:</b> <span id='v-bme-dew'>-</span><br>"
+          "<b>Gefühlt:</b> <span id='v-bme-heat'>-</span><br>"
           "<b>Gaswiderstand:</b> <span id='v-bme-gas'>-</span><br>"
           "<b>Referenz saubere Luft:</b> <span id='v-bme-baseline'>-</span><br>"
           "<b>Zuletzt gespeichert:</b> <span id='v-bme-save'>-</span><br>"
@@ -599,6 +612,9 @@ static void handleRoot() {
   chunk(F("</div><div class='row2'>"));
   chunk(F("<div class='chart-wrap'><label>Luftdruck (hPa)</label><div id='c_pres' class='chart'></div></div>"));
   chunk(F("<div class='chart-wrap'><label>Luftqualität (IAQ)</label><div id='c_iaq' class='chart'></div></div>"));
+  chunk(F("</div><div class='row2'>"));
+  chunk(F("<div class='chart-wrap'><label>Taupunkt (\u00B0C)</label><div id='c_dew' class='chart'></div></div>"));
+  chunk(F("<div class='chart-wrap'><label>Gefühlte Temp (\u00B0C)</label><div id='c_heat' class='chart'></div></div>"));
   chunk(F("</div>"));
 
   chunk(F("<h3>30-Tage Trend (Tag/Nacht)</h3>"));
@@ -608,6 +624,9 @@ static void handleRoot() {
   chunk(F("</div><div class='row2'>"));
   chunk(F("<div class='chart-wrap'><label>Luftdruck (hPa)</label><div id='cm_pres' class='chart'></div></div>"));
   chunk(F("<div class='chart-wrap'><label>Luftqualität (IAQ)</label><div id='cm_iaq' class='chart'></div></div>"));
+  chunk(F("</div><div class='row2'>"));
+  chunk(F("<div class='chart-wrap'><label>Taupunkt (\u00B0C)</label><div id='cm_dew' class='chart'></div></div>"));
+  chunk(F("<div class='chart-wrap'><label>Gefühlte Temp (\u00B0C)</label><div id='cm_heat' class='chart'></div></div>"));
   chunk(F("</div>"));
 
   chunk(F("</div>")); // panel env
@@ -1124,14 +1143,32 @@ static void handleApiStatus() {
   };
 
   String presTrend = "";
+  float diff = 0.0f;
   if (bmeHistCount >= 36) { // 3 Stunden (36 * 5 Minuten)
     int prevIdx = (bmeHistIdx + BME_HIST_POINTS - 36) % BME_HIST_POINTS;
     float oldPres = bmeHistory[prevIdx].pres;
     if (isfinite(oldPres) && oldPres > 0 && isfinite(bmePres)) {
-      float diff = bmePres - oldPres;
+      diff = bmePres - oldPres;
       if (diff > 1.0f) presTrend = "&nearr;";
       else if (diff < -1.0f) presTrend = "&searr;";
       else presTrend = "&rarr;";
+    }
+  }
+
+  String forecast = "Wird berechnet...";
+  if (bmeHistCount >= 36 && isfinite(bmePres)) {
+    if (bmePres < 1000) {
+      if (diff < -1.0f) forecast = "Sturm/Regen";
+      else if (diff > 1.0f) forecast = "Besserung";
+      else forecast = "Regnerisch";
+    } else if (bmePres > 1020) {
+      if (diff < -1.0f) forecast = "Verschlechterung";
+      else if (diff > 1.0f) forecast = "Sehr sonnig";
+      else forecast = "Sonnig";
+    } else {
+      if (diff < -1.0f) forecast = "Wechselhaft/Regen";
+      else if (diff > 1.0f) forecast = "Aufheiternd";
+      else forecast = "Wechselhaft";
     }
   }
 
@@ -1164,6 +1201,9 @@ static void handleApiStatus() {
   json += String(F("\"bme_humi_text\":\"")) + jsonEscape(humiText(bmeHumi)) + F("\",");
   json += String(F("\"bme_humi_color\":\"")) + humiColor(bmeHumi) + F("\",");
   json += String(F("\"bme_pres_trend\":\"")) + presTrend + F("\",");
+  json += String(F("\"bme_forecast\":\"")) + jsonEscape(forecast) + F("\",");
+  json += String(F("\"bme_dew\":")) + (isfinite(bmeDew) ? String(bmeDew, 1) : String(-127.0f)) + F(",");
+  json += String(F("\"bme_heat\":")) + (isfinite(bmeHeat) ? String(bmeHeat, 1) : String(-127.0f)) + F(",");
   json += String(F("\"bme_last_save\":\"")) + jsonEscape(lastBmeSaveTime) + F("\",");
   json += String(F("\"rtc_present\":")) + (rtcPresent ? F("true") : F("false")) + F(",");
   json += String(F("\"rtc_ok\":")) + (rtcValid ? F("true") : F("false")) + F(",");
@@ -1226,8 +1266,8 @@ static void handleApiHistory() {
     uint16_t idx = (bmeHistIdx - bmeHistCount + i + BME_HIST_POINTS) % BME_HIST_POINTS;
     BmeHistEntry &e = bmeHistory[idx];
     
-    snprintf(buf, sizeof(buf), "{\"t\":%.1f,\"h\":%.1f,\"p\":%.1f,\"i\":%.0f}",
-             e.temp, e.humi, e.pres, e.iaq);
+    snprintf(buf, sizeof(buf), "{\"t\":%.1f,\"h\":%.1f,\"p\":%.1f,\"i\":%.0f,\"d\":%.1f,\"x\":%.1f}",
+             e.temp, e.humi, e.pres, e.iaq, e.dew, e.heat);
     server.sendContent(buf);
     
     if (i < bmeHistCount - 1) server.sendContent(F(","));
@@ -1250,8 +1290,8 @@ static void handleApiHistoryMonth() {
     uint16_t idx = (bmeMonthIdx - bmeMonthCount + i + 30) % 30;
     BmeMonthEntry &e = bmeMonthHistory[idx];
     
-    snprintf(buf, sizeof(buf), "{\"td\":%.1f,\"tn\":%.1f,\"hd\":%.1f,\"hn\":%.1f,\"pd\":%.1f,\"pn\":%.1f,\"id\":%.0f,\"in\":%.0f}",
-             e.temp_day, e.temp_night, e.humi_day, e.humi_night, e.pres_day, e.pres_night, e.iaq_day, e.iaq_night);
+    snprintf(buf, sizeof(buf), "{\"td\":%.1f,\"tn\":%.1f,\"hd\":%.1f,\"hn\":%.1f,\"pd\":%.1f,\"pn\":%.1f,\"id\":%.0f,\"in\":%.0f,\"dd\":%.1f,\"dn\":%.1f,\"xd\":%.1f,\"xn\":%.1f}",
+             e.temp_day, e.temp_night, e.humi_day, e.humi_night, e.pres_day, e.pres_night, e.iaq_day, e.iaq_night, e.dew_day, e.dew_night, e.heat_day, e.heat_night);
     server.sendContent(buf);
     
     if (i < bmeMonthCount - 1) server.sendContent(F(","));

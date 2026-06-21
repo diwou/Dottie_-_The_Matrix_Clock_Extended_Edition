@@ -87,6 +87,8 @@ struct BmeHistEntry {
   float humi;
   float pres;
   float iaq;
+  float dew;
+  float heat;
 };
 
 static BmeHistEntry bmeHistory[BME_HIST_POINTS];
@@ -104,14 +106,19 @@ struct BmeMonthEntry {
   float humi_day, humi_night;
   float pres_day, pres_night;
   float iaq_day, iaq_night;
+  float dew_day, dew_night;
+  float heat_day, heat_night;
 };
 static BmeMonthEntry bmeMonthHistory[30];
 static uint8_t       bmeMonthIdx = 0;
 static uint8_t       bmeMonthCount = 0;
-static float         bmeSumTemp = 0, bmeSumHumi = 0, bmeSumPres = 0, bmeSumIaq = 0;
+static float         bmeSumTemp = 0, bmeSumHumi = 0, bmeSumPres = 0, bmeSumIaq = 0, bmeSumDew = 0, bmeSumHeat = 0;
 static int           bmeSumCount = 0;
 static float         bmeIaqDiagram = -1.0f;
+static float         bmeDew = 0.0f;
+static float         bmeHeat = 0.0f;
 static int           bmeLastPhase = -1; // 0=Nacht(18-06), 1=Tag(06-18)
+
 
 // I2C Mutex für Thread-Safety (ESP32 Multi-Core)
 #if defined(ARDUINO_ARCH_ESP32)
@@ -558,7 +565,7 @@ static void updateHistory() {
     }
     if (histIaq < 0.0f) histIaq = 0.0f;
     
-    bmeHistory[bmeHistIdx] = { bmeTemp, bmeHumi, bmePres, histIaq };
+    bmeHistory[bmeHistIdx] = { bmeTemp, bmeHumi, bmePres, histIaq, bmeDew, bmeHeat };
     bmeHistIdx = (bmeHistIdx + 1) % BME_HIST_POINTS;
     if (bmeHistCount < BME_HIST_POINTS) bmeHistCount++;
 
@@ -576,23 +583,29 @@ static void updateHistory() {
           float avgHumi = bmeSumHumi / bmeSumCount;
           float avgPres = bmeSumPres / bmeSumCount;
           float avgIaq  = bmeSumIaq / bmeSumCount;
+          float avgDew  = bmeSumDew / bmeSumCount;
+          float avgHeat = bmeSumHeat / bmeSumCount;
           
           if (bmeLastPhase == 1) { // War Tag
             bmeMonthHistory[bmeMonthIdx].temp_day = avgTemp;
             bmeMonthHistory[bmeMonthIdx].humi_day = avgHumi;
             bmeMonthHistory[bmeMonthIdx].pres_day = avgPres;
             bmeMonthHistory[bmeMonthIdx].iaq_day  = avgIaq;
+            bmeMonthHistory[bmeMonthIdx].dew_day  = avgDew;
+            bmeMonthHistory[bmeMonthIdx].heat_day = avgHeat;
           } else { // War Nacht
             bmeMonthHistory[bmeMonthIdx].temp_night = avgTemp;
             bmeMonthHistory[bmeMonthIdx].humi_night = avgHumi;
             bmeMonthHistory[bmeMonthIdx].pres_night = avgPres;
             bmeMonthHistory[bmeMonthIdx].iaq_night  = avgIaq;
+            bmeMonthHistory[bmeMonthIdx].dew_night  = avgDew;
+            bmeMonthHistory[bmeMonthIdx].heat_night = avgHeat;
             
             bmeMonthIdx = (bmeMonthIdx + 1) % 30;
             if (bmeMonthCount < 30) bmeMonthCount++;
           }
         }
-        bmeSumTemp = 0; bmeSumHumi = 0; bmeSumPres = 0; bmeSumIaq = 0;
+        bmeSumTemp = 0; bmeSumHumi = 0; bmeSumPres = 0; bmeSumIaq = 0; bmeSumDew = 0; bmeSumHeat = 0;
         bmeSumCount = 0;
         bmeLastPhase = currentPhase;
       }
@@ -601,6 +614,8 @@ static void updateHistory() {
       bmeSumHumi += bmeHumi;
       bmeSumPres += bmePres;
       if (bmeIaqScore >= 0) bmeSumIaq += bmeIaqScore;
+      bmeSumDew += bmeDew;
+      bmeSumHeat += bmeHeat;
       bmeSumCount++;
     }
 
@@ -627,6 +642,21 @@ static void updateBme680() {
     bmeHumi = bme.humidity;
     bmePres = bme.pressure / 100.0f;
     float raw_gas = bme.gas_resistance / 1000.0f;
+    
+    // 0. Taupunkt und Hitzeindex berechnen
+    float alpha = log(bmeHumi / 100.0f) + (17.62f * bmeTemp) / (243.12f + bmeTemp);
+    bmeDew = (243.12f * alpha) / (17.62f - alpha);
+
+    bmeHeat = bmeTemp;
+    if (bmeTemp >= 20.0f) {
+      float c1 = -8.78469475556f, c2 = 1.61139411f, c3 = 2.33854883889f;
+      float c4 = -0.14611605f, c5 = -0.012308094f, c6 = -0.0164248277778f;
+      float c7 = 0.002211732f, c8 = 0.00072546f, c9 = -0.000003582f;
+      float T = bmeTemp;
+      float R = bmeHumi;
+      bmeHeat = c1 + c2*T + c3*R + c4*T*R + c5*T*T + c6*R*R + c7*T*T*R + c8*T*R*R + c9*T*T*R*R;
+    }
+
     
     // 1. Absolute Feuchtigkeit (AH) in g/m³ berechnen
     float ah = (6.112f * exp((17.67f * bmeTemp)/(bmeTemp + 243.5f)) * bmeHumi * 2.1674f) / (273.15f + bmeTemp);

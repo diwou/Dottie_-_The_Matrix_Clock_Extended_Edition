@@ -11,6 +11,9 @@ Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1.0.0
 ## [Unreleased]
 
 ### Hinzugefügt
+- **Wetter und Umweltdaten:** Berechnung von Taupunkt und Hitzeindex aus den BME680 Messwerten hinzugefügt. Implementierung einer barometrischen Wettervorhersage (Zambretti-Ansatz).
+- **WebUI Erweiterung:** Anzeige von Taupunkt, Gefühlter Temperatur (Hitzeindex) und einer Text-Wettervorhersage in den Umweltdaten.
+- **Erweiterte Historie:** Die 24h-Diagramme und 30-Tage-Trends zeigen nun auch Graphen für Taupunkt und Hitzeindex. (Achtung: Dies erforderte eine Änderung der Speicherstruktur, alte Historien-Daten wurden beim Boot zurückgesetzt).
 - **Umweltsensoren UI:** Die Web-Oberfläche zeigt nun zusätzlich zur Luftfeuchtigkeit in Prozent einen qualitativen Statustext mit Farbkodierung (z.B. "Optimal", "Zu trocken") sowie neben dem Luftdruck einen Trendpfeil (steigend, fallend, gleichbleibend) basierend auf dem Verlauf der letzten 3 Stunden an. (Ref: e0116df)
 - **IAQ-Glättung (Filter):** Für das 24h-Diagramm wird nun ein komplett isolierter, extremer EMA-Filter (99% Trägheit) verwendet, um das Live-Rauschen vor der Speicherung perfekt weichzuzeichnen. Aufwärmwerte (-1.0) werden abgefangen, um die Y-Achse nicht zu ruinieren. Die Web-Anzeige reagiert weiterhin flott (80/20). (Ref: 54fb449)
 - **Historie der Umweltdaten (30 Tage Trend):** Neue Diagramme unterhalb der 24h-Historie zeigen nun zusätzlich einen Trend über 30 Tage. Pro Diagramm werden eine Tages- und eine Nacht-Kurve (gemittelt) eingezeichnet, um langfristige Tendenzen (z.B. Heizverhalten oder Lüftungstrends über Wochen) optimal sichtbar zu machen. Die Datensicherung erfolgt 1x stündlich ausfallsicher ins LittleFS (`/bme_month.bin`). (Ref: a91db9c)
