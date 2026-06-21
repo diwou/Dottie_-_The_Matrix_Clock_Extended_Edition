@@ -402,6 +402,8 @@ static void handleRoot() {
           "if(eheat)eheat.textContent=d.bme_heat>-100?d.bme_heat.toFixed(1)+' \u00B0C':'-';"
           "var eabsh=document.getElementById('v-bme-abshumi');"
           "if(eabsh)eabsh.textContent=d.bme_abs_humi>=0?d.bme_abs_humi.toFixed(1)+' g/m\u00B3':'-';"
+          "var eat=document.getElementById('v-bme-abshumi-text');"
+          "if(eat){eat.textContent=d.bme_abs_humi_text||''; eat.style.color=d.bme_abs_humi_color||'';}"
           "var eg=document.getElementById('v-bme-gas');"
           "if(eg)eg.textContent=d.bme_gas>=0?d.bme_gas.toFixed(1)+' kOhm':'-';"
           "var egb=document.getElementById('v-bme-baseline');"
@@ -595,7 +597,7 @@ static void handleRoot() {
           "<b>Wetter-Tendenz:</b> <span id='v-bme-forecast'>-</span><br>"
           "<b>Taupunkt:</b> <span id='v-bme-dew'>-</span><br>"
           "<b>Gefühlt:</b> <span id='v-bme-heat'>-</span><br>"
-          "<b>Absolute Feuchte:</b> <span id='v-bme-abshumi'>-</span><br>"
+          "<b>Absolute Feuchte:</b> <span id='v-bme-abshumi'>-</span> &nbsp; <b id='v-bme-abshumi-text'></b><br>"
           "<b>Gaswiderstand:</b> <span id='v-bme-gas'>-</span><br>"
           "<b>Referenz saubere Luft:</b> <span id='v-bme-baseline'>-</span><br>"
           "<b>Zuletzt gespeichert:</b> <span id='v-bme-save'>-</span><br>"
@@ -1154,6 +1156,23 @@ static void handleApiStatus() {
     return "#16a34a";
   };
 
+  auto absHumiText = [](float ah) -> const char* {
+    if (ah < 0.0f) return "";
+    if (ah < 5.0f) return "Sehr trocken";
+    if (ah <= 7.0f) return "Trocken";
+    if (ah <= 11.0f) return "Optimal";
+    if (ah <= 13.5f) return "Erhöht";
+    if (ah <= 16.0f) return "Hoch (schwül)";
+    return "Sehr hoch (schwül)";
+  };
+
+  auto absHumiColor = [](float ah) -> const char* {
+    if (ah < 0.0f) return "";
+    if (ah < 5.0f || ah > 16.0f) return "#dc2626";
+    if (ah <= 7.0f || ah > 13.5f) return "#eab308";
+    return "#16a34a";
+  };
+
   String presTrend = "";
   float diff = 0.0f;
   if (bmeHistCount >= 36) { // 3 Stunden (36 * 5 Minuten)
@@ -1217,6 +1236,8 @@ static void handleApiStatus() {
   json += String(F("\"bme_dew\":")) + (isfinite(bmeDew) ? String(bmeDew, 1) : String(-127.0f)) + F(",");
   json += String(F("\"bme_heat\":")) + (isfinite(bmeHeat) ? String(bmeHeat, 1) : String(-127.0f)) + F(",");
   json += String(F("\"bme_abs_humi\":")) + (isfinite(bmeAbsHumi) ? String(bmeAbsHumi, 1) : String(-1.0f)) + F(",");
+  json += String(F("\"bme_abs_humi_text\":\"")) + jsonEscape(absHumiText(bmeAbsHumi)) + F("\",");
+  json += String(F("\"bme_abs_humi_color\":\"")) + absHumiColor(bmeAbsHumi) + F("\",");
   json += String(F("\"bme_last_save\":\"")) + jsonEscape(lastBmeSaveTime) + F("\",");
   json += String(F("\"rtc_present\":")) + (rtcPresent ? F("true") : F("false")) + F(",");
   json += String(F("\"rtc_ok\":")) + (rtcValid ? F("true") : F("false")) + F(",");

@@ -12,7 +12,7 @@ Format orientiert sich an [Keep a Changelog](https://keepachangelog.com/de/1.0.0
 
 ### Hinzugefügt
 - **Wetter und Umweltdaten:** Berechnung von Taupunkt, Hitzeindex und der absoluten Luftfeuchtigkeit (in g/m³) aus den BME680 Messwerten hinzugefügt. Implementierung einer barometrischen Wettervorhersage (Zambretti-Ansatz).
-- **WebUI Erweiterung:** Anzeige von absoluter Feuchtigkeit, Taupunkt, Gefühlter Temperatur (Hitzeindex) und einer Text-Wettervorhersage in den Umweltdaten.
+- **WebUI Erweiterung:** Anzeige von absoluter Feuchtigkeit (inkl. qualitativem Indikator), Taupunkt, Gefühlter Temperatur (Hitzeindex) und einer Text-Wettervorhersage in den Umweltdaten.
 - **Druckkorrektur & Schimmelwarnung:** Der Luftdruck wird nun anhand einer konfigurierbaren Höhe über NN (im UI unter System > Standort einstellbar) auf Meereshöhe umgerechnet. Bei einer relativen Luftfeuchtigkeit über 65% wird nun eine Schimmel-Warnung (Lüftungsempfehlung) angezeigt.
 - **I2C Diagnose:** Die I2C Diagnose-Anzeige für RTC und Lichtsensor im WebUI zeigt nun ordnungsgemäß die gefundenen Adressen statt eines Platzhalters an (z.B. VEML7700@0x10=0, DS3231@0x68=0).
 - **Erweiterte Historie:** Die 24h-Diagramme und 30-Tage-Trends zeigen nun auch Graphen für Taupunkt und Hitzeindex. (Achtung: Dies erforderte eine Änderung der Speicherstruktur, alte Historien-Daten wurden beim Boot zurückgesetzt).
