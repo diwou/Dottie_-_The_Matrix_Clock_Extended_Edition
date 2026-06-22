@@ -1351,15 +1351,14 @@ void loop() {
       lastScrollBottomMs = now;
 
       // String nur generieren wenn nötig oder Messwerte sich ändern könnten
-      static String envStr = "";
+      static char envStr[256] = "";
       static int16_t fullWidth = 0;
       static uint32_t lastUpdate = 0;
 
-      if (envStr == "" || now - lastUpdate > 10000) {
+      if (envStr[0] == '\0' || now - lastUpdate > 10000) {
         lastUpdate = now;
-        char envBuf[256];
         if (isfinite(bmeTemp) && isfinite(bmeHumi) && isfinite(bmePres)) {
-          String forecast = "";
+          const char* forecast = "";
           if (bmeHistCount >= 36) {
             int prevIdx = (bmeHistIdx + BME_HIST_POINTS - 36) % BME_HIST_POINTS;
             float oldPres = bmeHistory[prevIdx].pres;
@@ -1392,21 +1391,20 @@ void loop() {
           }
 
           // UTF-8 Grad-Symbol: \xC2\xB0
-          snprintf(envBuf, sizeof(envBuf), "%.1f\xC2\xB0" "C - %.1f %% (%s) - %.1f hPa (%s) ", 
+          snprintf(envStr, sizeof(envStr), "%.1f\xC2\xB0" "C - %.1f %% (%s) - %.1f hPa (%s) ", 
                    bmeTemp, bmeHumi, 
                    absHumiTxt[0] ? absHumiTxt : "...", 
                    bmePres, 
-                   forecast.length() > 0 ? forecast.c_str() : "TREND SAMMELT...");
+                   forecast[0] ? forecast : "TREND SAMMELT...");
         } else {
-          strcpy(envBuf, "Warte auf Sensordaten... ");
+          strcpy(envStr, "Warte auf Sensordaten... ");
         }
-        envStr = String(envBuf);
         initU8g2Bottom(cfg.bottom_env_font);
-        fullWidth = u8g2_GetUTF8Width(&g_u8g2_bottom, envStr.c_str());
+        fullWidth = u8g2_GetUTF8Width(&g_u8g2_bottom, envStr);
       }
       
       u8g2_ClearBuffer(&g_u8g2_bottom);
-      u8g2_DrawUTF8(&g_u8g2_bottom, scrollPosX, 8, envStr.c_str());
+      u8g2_DrawUTF8(&g_u8g2_bottom, scrollPosX, 8, envStr);
       
       // Wenn das Ende erreicht ist, wieder von vorne (oder zurück zum Wochentag)
       if (scrollPosX < -fullWidth) {
@@ -1415,7 +1413,7 @@ void loop() {
           lastBottomSwitchMs = now; // Timer für Wochentag neu starten
         }
         scrollPosX = 64;
-        envStr = ""; // String beim nächsten Mal neu berechnen
+        envStr[0] = '\0'; // String beim nächsten Mal neu berechnen
       } else {
         scrollPosX--;
       }
