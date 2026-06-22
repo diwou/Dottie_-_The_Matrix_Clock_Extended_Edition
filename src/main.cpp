@@ -1386,9 +1386,9 @@ void loop() {
             if (bmeAbsHumi < 5.0f) absHumiTxt = "SEHR TROCKEN";
             else if (bmeAbsHumi <= 7.0f) absHumiTxt = "TROCKEN";
             else if (bmeAbsHumi <= 11.0f) absHumiTxt = "OPTIMAL";
-            else if (bmeAbsHumi <= 13.5f) absHumiTxt = "ERHÖHT";
-            else if (bmeAbsHumi <= 16.0f) absHumiTxt = "HOCH (SCHWÜL)";
-            else absHumiTxt = "SEHR HOCH (SCHWÜL)";
+            else if (bmeAbsHumi <= 13.5f) absHumiTxt = "ERHOEHT";
+            else if (bmeAbsHumi <= 16.0f) absHumiTxt = "HOCH (SCHWUEL)";
+            else absHumiTxt = "SEHR HOCH (SCHWUEL)";
           }
 
           // UTF-8 Grad-Symbol: \xC2\xB0
