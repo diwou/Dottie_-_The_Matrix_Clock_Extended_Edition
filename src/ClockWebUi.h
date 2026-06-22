@@ -1189,17 +1189,17 @@ static void handleApiStatus() {
   String forecast = "Wird berechnet...";
   if (bmeHistCount >= 36 && isfinite(bmePres)) {
     if (bmePres < 1000) {
-      if (diff < -1.0f) forecast = "Sturm/Regen";
-      else if (diff > 1.0f) forecast = "Besserung";
-      else forecast = "Regnerisch";
+      if (diff < -1.0f) forecast = "Nass";
+      else if (diff > 1.0f) forecast = "Aufklarend";
+      else forecast = "Unbeständig";
     } else if (bmePres > 1020) {
-      if (diff < -1.0f) forecast = "Verschlechterung";
-      else if (diff > 1.0f) forecast = "Sehr sonnig";
-      else forecast = "Sonnig";
+      if (diff < -1.0f) forecast = "Eintrübend";
+      else if (diff > 1.0f) forecast = "Beständig";
+      else forecast = "Freundlich";
     } else {
-      if (diff < -1.0f) forecast = "Wechselhaft/Regen";
-      else if (diff > 1.0f) forecast = "Aufheiternd";
-      else forecast = "Wechselhaft";
+      if (diff < -1.0f) forecast = "Wechselhaft";
+      else if (diff > 1.0f) forecast = "Aufklarend";
+      else forecast = "Ruhig";
     }
   }
 

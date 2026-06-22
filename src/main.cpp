@@ -1369,17 +1369,17 @@ void loop() {
             if (isfinite(oldPres) && oldPres > 0 && isfinite(bmePres)) {
               float diff = bmePres - oldPres;
               if (bmePres < 1000) {
-                if (diff < -1.0f) forecast = "STURM/REGEN";
-                else if (diff > 1.0f) forecast = "BESSERUNG";
-                else forecast = "REGNERISCH";
+                if (diff < -1.0f) forecast = "NASS";
+                else if (diff > 1.0f) forecast = "AUFKLAREND";
+                else forecast = "UNBESTAENDIG";
               } else if (bmePres > 1020) {
-                if (diff < -1.0f) forecast = "VERSCHLECHTERUNG";
-                else if (diff > 1.0f) forecast = "SEHR SONNIG";
-                else forecast = "SONNIG";
+                if (diff < -1.0f) forecast = "EINTRUEBEND";
+                else if (diff > 1.0f) forecast = "BESTAENDIG";
+                else forecast = "FREUNDLICH";
               } else {
-                if (diff < -1.0f) forecast = "WECHSELHAFT/REGEN";
-                else if (diff > 1.0f) forecast = "AUFHEITERND";
-                else forecast = "WECHSELHAFT";
+                if (diff < -1.0f) forecast = "WECHSELHAFT";
+                else if (diff > 1.0f) forecast = "AUFKLAREND";
+                else forecast = "RUHIG";
               }
             }
           }
