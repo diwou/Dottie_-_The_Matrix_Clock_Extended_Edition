@@ -1357,11 +1357,46 @@ void loop() {
 
       if (envStr == "" || now - lastUpdate > 10000) {
         lastUpdate = now;
-        char envBuf[128];
+        char envBuf[256];
         if (isfinite(bmeTemp) && isfinite(bmeHumi) && isfinite(bmePres)) {
+          String forecast = "";
+          if (bmeHistCount >= 36) {
+            int prevIdx = (bmeHistIdx + BME_HIST_POINTS - 36) % BME_HIST_POINTS;
+            float oldPres = bmeHistory[prevIdx].pres;
+            if (isfinite(oldPres) && oldPres > 0 && isfinite(bmePres)) {
+              float diff = bmePres - oldPres;
+              if (bmePres < 1000) {
+                if (diff < -1.0f) forecast = "Sturm/Regen";
+                else if (diff > 1.0f) forecast = "Besserung";
+                else forecast = "Regnerisch";
+              } else if (bmePres > 1020) {
+                if (diff < -1.0f) forecast = "Verschlechterung";
+                else if (diff > 1.0f) forecast = "Sehr sonnig";
+                else forecast = "Sonnig";
+              } else {
+                if (diff < -1.0f) forecast = "Wechselhaft/Regen";
+                else if (diff > 1.0f) forecast = "Aufheiternd";
+                else forecast = "Wechselhaft";
+              }
+            }
+          }
+
+          const char* absHumiTxt = "";
+          if (bmeAbsHumi >= 0.0f) {
+            if (bmeAbsHumi < 5.0f) absHumiTxt = "Sehr trocken";
+            else if (bmeAbsHumi <= 7.0f) absHumiTxt = "Trocken";
+            else if (bmeAbsHumi <= 11.0f) absHumiTxt = "Optimal";
+            else if (bmeAbsHumi <= 13.5f) absHumiTxt = "Erhoeht";
+            else if (bmeAbsHumi <= 16.0f) absHumiTxt = "Hoch (schwuel)";
+            else absHumiTxt = "Sehr hoch (schwuel)";
+          }
+
           // UTF-8 Grad-Symbol: \xC2\xB0
-          snprintf(envBuf, sizeof(envBuf), "%.1f\xC2\xB0" "C - %.1f %% - %.1f hPa ", 
-                   bmeTemp, bmeHumi, bmePres);
+          snprintf(envBuf, sizeof(envBuf), "%.1f\xC2\xB0" "C - %.1f %% (%s) - %.1f hPa (%s) ", 
+                   bmeTemp, bmeHumi, 
+                   absHumiTxt[0] ? absHumiTxt : "...", 
+                   bmePres, 
+                   forecast.length() > 0 ? forecast.c_str() : "Trend sammelt...");
         } else {
           strcpy(envBuf, "Warte auf Sensordaten... ");
         }
