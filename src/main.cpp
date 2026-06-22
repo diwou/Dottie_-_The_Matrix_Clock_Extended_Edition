@@ -452,9 +452,13 @@ static void timeSyncCallback(struct timeval *tv) {
 
 static bool isTimeSynced() {
   if (lastSyncEpoch == 0) return false;
-  // Wenn mehr als das Doppelte des Intervalls vergangen ist (oder mind. 1h)
-  uint32_t threshold = (uint32_t)cfg.ntp_interval_min * 60 * 2;
-  if (threshold < 3600) threshold = 3600; 
+  
+  // Das konfigurierte Intervall in Sekunden
+  uint32_t intervalSec = (uint32_t)cfg.ntp_interval_min * 60;
+  
+  // Karenzzeit von 5 Minuten (300 Sekunden) für Netzwerkschluckauf (z.B. Router-Reboot)
+  uint32_t threshold = intervalSec + 300; 
+  
   return (time(nullptr) - lastSyncEpoch < threshold);
 }
 
