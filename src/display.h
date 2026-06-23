@@ -3,6 +3,7 @@
 #include <MD_MAX72xx.h>
 #include <U8g2lib.h>
 #include "config.h"
+#include "font_ibm8x8_user.h"
 
 extern MD_MAX72XX mx;
 extern const char* BOTTOM_FONT_LABELS[7];
@@ -411,7 +412,7 @@ static const uint8_t* BOTTOM_FONTS[] = {
   u8g2_font_courR08_tf,   // 3: Courier
   u8g2_font_lubR08_tf,    // 4: Lubalin Graph
   u8g2_font_helvB08_tf,   // 5: Helvetica Bold
-  u8g2_font_pxplusibmcga_8f,  // 6: IBM BIOS 8x8
+  u8g2_font_ibm8x8_user,  // 6: IBM BIOS 8x8
 };
 
 const char* BOTTOM_FONT_LABELS[7] = {
