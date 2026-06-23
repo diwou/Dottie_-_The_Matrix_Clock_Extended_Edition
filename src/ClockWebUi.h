@@ -138,7 +138,8 @@ static void handleRoot() {
           "renderC('c_pres',d,'p','#f97316','hPa');"
           "renderC('c_iaq',d,'i','#ef4444','');"
           "renderC('c_dew',d,'d','#0ea5e9','\u00B0C');"
-          "renderC('c_heat',d,'x','#a855f7','\u00B0C');"
+          "renderC('c_heat',d,'x','#a855f7','\\u00B0C');"
+          "renderC('c_abs',d,'a','#06b6d4',' g/m³',true);"
           "}).catch(e=>console.error(e));"
           "fetch('/api/history_month').then(r=>r.json()).then(d=>{"
           "renderCMonth('cm_temp',d,'td','tn','#facc15','#3b82f6','\u00B0C');"
@@ -146,20 +147,28 @@ static void handleRoot() {
           "renderCMonth('cm_pres',d,'pd','pn','#fb923c','#c2410c','hPa');"
           "renderCMonth('cm_iaq',d,'id','in','#f87171','#b91c1c','');"
           "renderCMonth('cm_dew',d,'dd','dn','#38bdf8','#0284c7','\u00B0C');"
-          "renderCMonth('cm_heat',d,'xd','xn','#c084fc','#7e22ce','\u00B0C');"
+          "renderCMonth('cm_heat',d,'xd','xn','#c084fc','#7e22ce','\\u00B0C');"
+          "renderCMonth('cm_abs',d,'ad','an','#22d3ee','#0891b2',' g/m³',true);"
           "}).catch(e=>console.error(e));}"
-          "function renderC(id,data,key,col,unit){"
+          "function renderC(id,data,key,col,unit,isAbs){"
           "var el=document.getElementById(id); if(!el)return;"
           "var w=el.clientWidth, h=el.clientHeight, pad=20, slots=287;"
           "var vals=data.map(e=>e[key]);"
           "var min=Math.min(...vals), max=Math.max(...vals);"
           "if(max==min){min-=1;max+=1;} var ran=max-min;"
+          "if(isAbs){min=0;max=Math.max(max,20);ran=max-min;}"
           "var pts=vals.map((v,i)=>({"
           "x:((slots-(data.length-1-i))/slots)*w,"
           "y:h-pad-((v-min)/ran)*(h-pad*2)}));"
           "var dLine='M'+pts.map(p=>p.x+','+p.y).join('L');"
           "var dArea=dLine+'L'+w+','+h+'L0,'+h+'Z';"
-          "var svg='<svg viewBox=\"0 0 '+w+' '+h+'\">'+"
+          "var rects='';"
+          "if(isAbs){"
+          "  var gy=v=>{var yy=h-pad-((v-min)/ran)*(h-pad*2);return yy<pad?pad:(yy>(h-pad)?(h-pad):yy);};"
+          "  var r=(yT,yB,c)=>'<rect x=\"0\" y=\"'+yT+'\" width=\"'+w+'\" height=\"'+(yB-yT)+'\" fill=\"'+c+'\"/>';"
+          "  rects=r(gy(25),gy(16),'rgba(239,68,68,0.15)')+r(gy(16),gy(13.5),'rgba(249,115,22,0.15)')+r(gy(13.5),gy(11),'rgba(250,204,21,0.15)')+r(gy(11),gy(7),'rgba(34,197,94,0.15)')+r(gy(7),gy(5),'rgba(250,204,21,0.15)')+r(gy(5),gy(0),'rgba(249,115,22,0.15)');"
+          "}"
+          "var svg='<svg viewBox=\"0 0 '+w+' '+h+'\">'+rects+"
           "'<line class=\"chart-grid\" x1=\"0\" y1=\"'+(h-pad)+'\" x2=\"'+w+'\" y2=\"'+(h-pad)+'\"/>'+"
           "'<line class=\"chart-grid\" x1=\"0\" y1=\"'+pad+'\" x2=\"'+w+'\" y2=\"'+pad+'\"/>'+"
           "'<line class=\"chart-grid\" x1=\"'+(w*0.25)+'\" y1=\"'+pad+'\" x2=\"'+(w*0.25)+'\" y2=\"'+(h-pad)+'\"/>'+"
@@ -174,7 +183,7 @@ static void handleRoot() {
           "'<text class=\"chart-lbl\" x=\"'+(w-35)+'\" y=\"'+(h-2)+'\">JETZT</text>'+"
           "'</svg>';"
           "el.innerHTML=svg;}"
-          "function renderCMonth(id,data,kd,kn,cd,cn,unit){"
+          "function renderCMonth(id,data,kd,kn,cd,cn,unit,isAbs){"
           "var el=document.getElementById(id); if(!el)return;"
           "var w=el.clientWidth, h=el.clientHeight, pad=20, slots=29;"
           "var min=0, max=0, ran=1, dLine_d='', dLine_n='';"
@@ -182,6 +191,7 @@ static void handleRoot() {
           "  var vd=data.map(e=>e[kd]), vn=data.map(e=>e[kn]);"
           "  min=Math.min(...vd,...vn); max=Math.max(...vd,...vn);"
           "  if(max==min){min-=1;max+=1;} ran=max-min;"
+          "  if(isAbs){min=0;max=Math.max(max,20);ran=max-min;}"
           "  var pts_d=vd.map((v,i)=>({x:((slots-(data.length-1-i))/slots)*w, y:h-pad-((v-min)/ran)*(h-pad*2)}));"
           "  var dLine_d='<path class=\"chart-line\" d=\"M'+pts_d.map(p=>p.x+','+p.y).join('L')+'\" stroke=\"'+cd+'\" stroke-width=\"2\" fill=\"none\"/>';"
           "  dLine_d += pts_d.map(p=>'<circle cx=\"'+p.x+'\" cy=\"'+p.y+'\" r=\"2.5\" fill=\"'+cd+'\"/>').join('');"
@@ -189,7 +199,13 @@ static void handleRoot() {
           "  var dLine_n='<path class=\"chart-line\" d=\"M'+pts_n.map(p=>p.x+','+p.y).join('L')+'\" stroke=\"'+cn+'\" stroke-width=\"2\" fill=\"none\"/>';"
           "  dLine_n += pts_n.map(p=>'<circle cx=\"'+p.x+'\" cy=\"'+p.y+'\" r=\"2.5\" fill=\"'+cn+'\"/>').join('');"
           "}"
-          "var svg='<svg viewBox=\"0 0 '+w+' '+h+'\">'+"
+          "var rects='';"
+          "if(isAbs){"
+          "  var gy=v=>{var yy=h-pad-((v-min)/ran)*(h-pad*2);return yy<pad?pad:(yy>(h-pad)?(h-pad):yy);};"
+          "  var r=(yT,yB,c)=>'<rect x=\"0\" y=\"'+yT+'\" width=\"'+w+'\" height=\"'+(yB-yT)+'\" fill=\"'+c+'\"/>';"
+          "  rects=r(gy(25),gy(16),'rgba(239,68,68,0.15)')+r(gy(16),gy(13.5),'rgba(249,115,22,0.15)')+r(gy(13.5),gy(11),'rgba(250,204,21,0.15)')+r(gy(11),gy(7),'rgba(34,197,94,0.15)')+r(gy(7),gy(5),'rgba(250,204,21,0.15)')+r(gy(5),gy(0),'rgba(249,115,22,0.15)');"
+          "}"
+          "var svg='<svg viewBox=\"0 0 '+w+' '+h+'\">'+rects+"
           "'<line class=\"chart-grid\" x1=\"0\" y1=\"'+(h-pad)+'\" x2=\"'+w+'\" y2=\"'+(h-pad)+'\"/>'+"
           "'<line class=\"chart-grid\" x1=\"0\" y1=\"'+pad+'\" x2=\"'+w+'\" y2=\"'+pad+'\"/>'+"
           "'<line class=\"chart-grid\" x1=\"'+(w*0.5)+'\" y1=\"'+pad+'\" x2=\"'+(w*0.5)+'\" y2=\"'+(h-pad)+'\"/>'+"
@@ -622,7 +638,16 @@ static void handleRoot() {
   chunk(F("</div><div class='row2'>"));
   chunk(F("<div class='chart-wrap'><label>Taupunkt (\u00B0C)</label><div id='c_dew' class='chart'></div></div>"));
   chunk(F("<div class='chart-wrap'><label>Gefühlte Temp (\u00B0C)</label><div id='c_heat' class='chart'></div></div>"));
-  chunk(F("</div>"));
+  chunk(F("</div><div class='row2'>"));
+  chunk(F("<div class='chart-wrap' style='grid-column: 1 / -1'><label>Absolute Feuchte (g/m\u00B3)</label><div id='c_abs' class='chart'></div></div>"));
+  chunk(F("</div><div class='hint' style='margin-top:2px;line-height:1.6'><b>Kategorien Absolute Feuchte:</b> "
+          "<span style='color:#ef4444'>&#9608;</span> &gt;16 (Sehr hoch) &nbsp; "
+          "<span style='color:#f97316'>&#9608;</span> 13.5-16 (Hoch) &nbsp; "
+          "<span style='color:#facc15'>&#9608;</span> 11-13.5 (Erhöht) &nbsp; "
+          "<span style='color:#22c55e'>&#9608;</span> 7-11 (Optimal) &nbsp; "
+          "<span style='color:#facc15'>&#9608;</span> 5-7 (Trocken) &nbsp; "
+          "<span style='color:#f97316'>&#9608;</span> &lt;5 (Sehr trocken)"
+          "</div>"));
 
   chunk(F("<h3>30-Tage Trend (Tag/Nacht)</h3>"));
   chunk(F("<div class='row2'>"));
@@ -634,7 +659,16 @@ static void handleRoot() {
   chunk(F("</div><div class='row2'>"));
   chunk(F("<div class='chart-wrap'><label>Taupunkt (\u00B0C)</label><div id='cm_dew' class='chart'></div></div>"));
   chunk(F("<div class='chart-wrap'><label>Gefühlte Temp (\u00B0C)</label><div id='cm_heat' class='chart'></div></div>"));
-  chunk(F("</div>"));
+  chunk(F("</div><div class='row2'>"));
+  chunk(F("<div class='chart-wrap' style='grid-column: 1 / -1'><label>Absolute Feuchte (g/m\u00B3)</label><div id='cm_abs' class='chart'></div></div>"));
+  chunk(F("</div><div class='hint' style='margin-top:2px;line-height:1.6'><b>Kategorien Absolute Feuchte:</b> "
+          "<span style='color:#ef4444'>&#9608;</span> &gt;16 (Sehr hoch) &nbsp; "
+          "<span style='color:#f97316'>&#9608;</span> 13.5-16 (Hoch) &nbsp; "
+          "<span style='color:#facc15'>&#9608;</span> 11-13.5 (Erhöht) &nbsp; "
+          "<span style='color:#22c55e'>&#9608;</span> 7-11 (Optimal) &nbsp; "
+          "<span style='color:#facc15'>&#9608;</span> 5-7 (Trocken) &nbsp; "
+          "<span style='color:#f97316'>&#9608;</span> &lt;5 (Sehr trocken)"
+          "</div>"));
 
   chunk(F("</div>")); // panel env
 
@@ -1300,8 +1334,9 @@ static void handleApiHistory() {
     uint16_t idx = (bmeHistIdx - bmeHistCount + i + BME_HIST_POINTS) % BME_HIST_POINTS;
     BmeHistEntry &e = bmeHistory[idx];
     
-    snprintf(buf, sizeof(buf), "{\"t\":%.1f,\"h\":%.1f,\"p\":%.1f,\"i\":%.0f,\"d\":%.1f,\"x\":%.1f}",
-             e.temp, e.humi, e.pres, e.iaq, e.dew, e.heat);
+    float ah = (6.112f * exp((17.67f * e.temp)/(e.temp + 243.5f)) * e.humi * 2.1674f) / (273.15f + e.temp);
+    snprintf(buf, sizeof(buf), "{\"t\":%.1f,\"h\":%.1f,\"p\":%.1f,\"i\":%.0f,\"d\":%.1f,\"x\":%.1f,\"a\":%.1f}",
+             e.temp, e.humi, e.pres, e.iaq, e.dew, e.heat, ah);
     server.sendContent(buf);
     
     if (i < bmeHistCount - 1) server.sendContent(F(","));
@@ -1324,8 +1359,10 @@ static void handleApiHistoryMonth() {
     uint16_t idx = (bmeMonthIdx - bmeMonthCount + i + 30) % 30;
     BmeMonthEntry &e = bmeMonthHistory[idx];
     
-    snprintf(buf, sizeof(buf), "{\"td\":%.1f,\"tn\":%.1f,\"hd\":%.1f,\"hn\":%.1f,\"pd\":%.1f,\"pn\":%.1f,\"id\":%.0f,\"in\":%.0f,\"dd\":%.1f,\"dn\":%.1f,\"xd\":%.1f,\"xn\":%.1f}",
-             e.temp_day, e.temp_night, e.humi_day, e.humi_night, e.pres_day, e.pres_night, e.iaq_day, e.iaq_night, e.dew_day, e.dew_night, e.heat_day, e.heat_night);
+    float ad = (6.112f * exp((17.67f * e.temp_day)/(e.temp_day + 243.5f)) * e.humi_day * 2.1674f) / (273.15f + e.temp_day);
+    float an = (6.112f * exp((17.67f * e.temp_night)/(e.temp_night + 243.5f)) * e.humi_night * 2.1674f) / (273.15f + e.temp_night);
+    snprintf(buf, sizeof(buf), "{\"td\":%.1f,\"tn\":%.1f,\"hd\":%.1f,\"hn\":%.1f,\"pd\":%.1f,\"pn\":%.1f,\"id\":%.0f,\"in\":%.0f,\"dd\":%.1f,\"dn\":%.1f,\"xd\":%.1f,\"xn\":%.1f,\"ad\":%.1f,\"an\":%.1f}",
+             e.temp_day, e.temp_night, e.humi_day, e.humi_night, e.pres_day, e.pres_night, e.iaq_day, e.iaq_night, e.dew_day, e.dew_night, e.heat_day, e.heat_night, ad, an);
     server.sendContent(buf);
     
     if (i < bmeMonthCount - 1) server.sendContent(F(","));
