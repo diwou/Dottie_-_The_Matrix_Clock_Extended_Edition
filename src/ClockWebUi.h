@@ -722,7 +722,7 @@ static void handleRoot() {
   chunk(F("<label>Schriftart Wochentag</label>"));
   {
     String sel = F("<select name='bottom_font'>");
-    for (uint8_t i = 0; i < 6; i++) {
+    for (uint8_t i = 0; i < 7; i++) {
       sel += String(F("<option value='")) + i + F("'") + selected(cfg.bottom_font == i) + F(">") + BOTTOM_FONT_LABELS[i] + F("</option>");
     }
     sel += F("</select>");
@@ -731,7 +731,7 @@ static void handleRoot() {
   chunk(F("<div id='grp_bottom_env_font'><label>Schriftart Umweltdaten</label>"));
   {
     String sel = F("<select name='bottom_env_font'>");
-    for (uint8_t i = 0; i < 6; i++) {
+    for (uint8_t i = 0; i < 7; i++) {
       sel += String(F("<option value='")) + i + F("'") + selected(cfg.bottom_env_font == i) + F(">") + BOTTOM_FONT_LABELS[i] + F("</option>");
     }
     sel += F("</select></div>");
@@ -882,8 +882,8 @@ static void applyFormToConfig() {
   if (server.hasArg(F("date_fmt"))) cfg.date_fmt = (uint8_t)constrain(server.arg(F("date_fmt")).toInt(), 0, 4);
   cfg.scroll_enabled = server.hasArg(F("scroll_enabled"));
   cfg.dark_mode = server.hasArg(F("dark_mode"));
-  if (server.hasArg(F("bottom_font"))) cfg.bottom_font = (uint8_t)constrain(server.arg(F("bottom_font")).toInt(), 0, 5);
-  if (server.hasArg(F("bottom_env_font"))) cfg.bottom_env_font = (uint8_t)constrain(server.arg(F("bottom_env_font")).toInt(), 0, 5);
+  if (server.hasArg(F("bottom_font"))) cfg.bottom_font = (uint8_t)constrain(server.arg(F("bottom_font")).toInt(), 0, 6);
+  if (server.hasArg(F("bottom_env_font"))) cfg.bottom_env_font = (uint8_t)constrain(server.arg(F("bottom_env_font")).toInt(), 0, 6);
   cfg.weekday_mixed_case = server.hasArg(F("weekday_mixed_case"));
   if (server.hasArg(F("bottom_mode"))) cfg.bottom_mode = (uint8_t)constrain(server.arg(F("bottom_mode")).toInt(), 0, 2);
   if (server.hasArg(F("bottom_switch_sec"))) cfg.bottom_switch_sec = (uint16_t)constrain(server.arg(F("bottom_switch_sec")).toInt(), 2, 600);

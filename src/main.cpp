@@ -1369,29 +1369,29 @@ void loop() {
             if (isfinite(oldPres) && oldPres > 0 && isfinite(bmePres)) {
               float diff = bmePres - oldPres;
               if (bmePres < 1000) {
-                if (diff < -1.0f) forecast = "NASS";
-                else if (diff > 1.0f) forecast = "AUFKLAREND";
-                else forecast = "UNBESTAENDIG";
+                if (diff < -1.0f) forecast = "Nass";
+                else if (diff > 1.0f) forecast = "Aufklarend";
+                else forecast = "Unbeständig";
               } else if (bmePres > 1020) {
-                if (diff < -1.0f) forecast = "EINTRUEBEND";
-                else if (diff > 1.0f) forecast = "BESTAENDIG";
-                else forecast = "FREUNDLICH";
+                if (diff < -1.0f) forecast = "Eintrübend";
+                else if (diff > 1.0f) forecast = "Beständig";
+                else forecast = "Freundlich";
               } else {
-                if (diff < -1.0f) forecast = "WECHSELHAFT";
-                else if (diff > 1.0f) forecast = "AUFKLAREND";
-                else forecast = "RUHIG";
+                if (diff < -1.0f) forecast = "Wechselhaft";
+                else if (diff > 1.0f) forecast = "Aufklarend";
+                else forecast = "Ruhig";
               }
             }
           }
 
           const char* absHumiTxt = "";
           if (bmeAbsHumi >= 0.0f) {
-            if (bmeAbsHumi < 5.0f) absHumiTxt = "SEHR TROCKEN";
-            else if (bmeAbsHumi <= 7.0f) absHumiTxt = "TROCKEN";
-            else if (bmeAbsHumi <= 11.0f) absHumiTxt = "OPTIMAL";
-            else if (bmeAbsHumi <= 13.5f) absHumiTxt = "ERHOEHT";
-            else if (bmeAbsHumi <= 16.0f) absHumiTxt = "HOCH (SCHWUEL)";
-            else absHumiTxt = "SEHR HOCH (SCHWUEL)";
+            if (bmeAbsHumi < 5.0f) absHumiTxt = "Sehr trocken";
+            else if (bmeAbsHumi <= 7.0f) absHumiTxt = "Trocken";
+            else if (bmeAbsHumi <= 11.0f) absHumiTxt = "Optimal";
+            else if (bmeAbsHumi <= 13.5f) absHumiTxt = "Erhöht";
+            else if (bmeAbsHumi <= 16.0f) absHumiTxt = "Hoch (schwül)";
+            else absHumiTxt = "Sehr hoch (schwül)";
           }
 
           // UTF-8 Grad-Symbol: \xC2\xB0
@@ -1399,7 +1399,7 @@ void loop() {
                    bmeTemp, bmeHumi, 
                    absHumiTxt[0] ? absHumiTxt : "...", 
                    bmePres, 
-                   forecast[0] ? forecast : "TREND SAMMELT...");
+                   forecast[0] ? forecast : "Trend sammelt...");
         } else {
           strcpy(envStr, "Warte auf Sensordaten... ");
         }
