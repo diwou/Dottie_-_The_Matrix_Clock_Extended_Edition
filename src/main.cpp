@@ -654,15 +654,20 @@ static void updateBme680() {
     float alpha = log(bmeHumi / 100.0f) + (17.62f * bmeTemp) / (243.12f + bmeTemp);
     bmeDew = (243.12f * alpha) / (17.62f - alpha);
 
-    bmeHeat = bmeTemp;
-    if (bmeTemp >= 20.0f) {
-      float c1 = -8.78469475556f, c2 = 1.61139411f, c3 = 2.33854883889f;
-      float c4 = -0.14611605f, c5 = -0.012308094f, c6 = -0.0164248277778f;
-      float c7 = 0.002211732f, c8 = 0.00072546f, c9 = -0.000003582f;
-      float T = bmeTemp;
-      float R = bmeHumi;
-      bmeHeat = c1 + c2*T + c3*R + c4*T*R + c5*T*T + c6*R*R + c7*T*T*R + c8*T*R*R + c9*T*T*R*R;
+    float tf = bmeTemp * 1.8f + 32.0f;
+    float hi = 0.5f * (tf + 61.0f + ((tf - 68.0f) * 1.2f) + (bmeHumi * 0.094f));
+    if (hi > 79.0f) {
+      hi = -42.379f + 2.04901523f * tf + 10.14333127f * bmeHumi 
+           - 0.22475541f * tf * bmeHumi - 0.00683783f * tf * tf 
+           - 0.05481717f * bmeHumi * bmeHumi + 0.00122874f * tf * tf * bmeHumi 
+           + 0.00085282f * tf * bmeHumi * bmeHumi - 0.00000199f * tf * tf * bmeHumi * bmeHumi;
+      if (bmeHumi < 13.0f && tf >= 80.0f && tf <= 112.0f) {
+        hi -= ((13.0f - bmeHumi) / 4.0f) * sqrt((17.0f - abs(tf - 95.0f)) / 17.0f);
+      } else if (bmeHumi > 85.0f && tf >= 80.0f && tf <= 87.0f) {
+        hi += ((bmeHumi - 85.0f) / 10.0f) * ((87.0f - tf) / 5.0f);
+      }
     }
+    bmeHeat = (hi - 32.0f) * 0.55555555555f;
 
     
     // 1. Absolute Feuchtigkeit (AH) in g/m³ berechnen
