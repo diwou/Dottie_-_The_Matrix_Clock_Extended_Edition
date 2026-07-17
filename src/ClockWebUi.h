@@ -149,6 +149,15 @@ static void handleRoot() {
           "renderCMonth('cm_dew',d,'dd','dn','#38bdf8','#0284c7','\u00B0C');"
           "renderCMonth('cm_heat',d,'xd','xn','#c084fc','#7e22ce','\\u00B0C');"
           "renderCMonth('cm_abs',d,'ad','an','#22d3ee','#0891b2',' g/m³',true);"
+          "}).catch(e=>console.error(e));"
+          "fetch('/api/history_year').then(r=>r.json()).then(d=>{"
+          "renderCYear('cy_temp',d,'tmax','tmin','#facc15','#3b82f6','\u00B0C');"
+          "renderCYear('cy_humi',d,'hmax','hmin','#a3e635','#4d7c0f','%');"
+          "renderCYear('cy_pres',d,'pmax','pmin','#fb923c','#c2410c','hPa');"
+          "renderCYear('cy_iaq',d,'imax','imin','#f87171','#b91c1c','');"
+          "renderCYear('cy_dew',d,'dmax','dmin','#38bdf8','#0284c7','\u00B0C');"
+          "renderCYear('cy_heat',d,'xmax','xmin','#c084fc','#7e22ce','\\u00B0C');"
+          "renderCYear('cy_abs',d,'amax','amin','#22d3ee','#0891b2',' g/m³',true);"
           "}).catch(e=>console.error(e));}"
           "function renderC(id,data,key,col,unit,isAbs){"
           "var el=document.getElementById(id); if(!el)return;"
@@ -213,6 +222,37 @@ static void handleRoot() {
           "'<text class=\"chart-lbl\" x=\"0\" y=\"'+(pad-4)+'\">'+(data&&data.length>0?max.toFixed(1)+unit:'-')+'</text>'+"
           "'<text class=\"chart-lbl\" x=\"0\" y=\"'+(h-pad-4)+'\">'+(data&&data.length>0?min.toFixed(1)+unit:'-')+'</text>'+"
           "'<text class=\"chart-lbl\" x=\"0\" y=\"'+(h-2)+'\">-30T</text>'+"
+          "'<text class=\"chart-lbl\" x=\"'+(w-35)+'\" y=\"'+(h-2)+'\">JETZT</text>'+"
+          "'</svg>';"
+          "el.innerHTML=svg;}"
+          "function renderCYear(id,data,kx,kn,cx,cn,unit,isAbs){"
+          "var el=document.getElementById(id); if(!el)return;"
+          "var w=el.clientWidth, h=el.clientHeight, pad=20, slots=364;"
+          "var min=0, max=0, ran=1, dLine_x='', dLine_n='';"
+          "if(data&&data.length>0){"
+          "  var vx=data.map(e=>e[kx]), vn=data.map(e=>e[kn]);"
+          "  min=Math.min(...vx,...vn); max=Math.max(...vx,...vn);"
+          "  if(max==min){min-=1;max+=1;} ran=max-min;"
+          "  if(isAbs){min=0;max=Math.max(max,20);ran=max-min;}"
+          "  var pts_x=vx.map((v,i)=>({x:((slots-(data.length-1-i))/slots)*w, y:h-pad-((v-min)/ran)*(h-pad*2)}));"
+          "  var dLine_x='<path class=\"chart-line\" d=\"M'+pts_x.map(p=>p.x+','+p.y).join('L')+'\" stroke=\"'+cx+'\" stroke-width=\"1.5\" fill=\"none\"/>';"
+          "  var pts_n=vn.map((v,i)=>({x:((slots-(data.length-1-i))/slots)*w, y:h-pad-((v-min)/ran)*(h-pad*2)}));"
+          "  var dLine_n='<path class=\"chart-line\" d=\"M'+pts_n.map(p=>p.x+','+p.y).join('L')+'\" stroke=\"'+cn+'\" stroke-width=\"1.5\" fill=\"none\"/>';"
+          "}"
+          "var rects='';"
+          "if(isAbs){"
+          "  var gy=v=>{var yy=h-pad-((v-min)/ran)*(h-pad*2);return yy<pad?pad:(yy>(h-pad)?(h-pad):yy);};"
+          "  var r=(yT,yB,c)=>'<rect x=\"0\" y=\"'+yT+'\" width=\"'+w+'\" height=\"'+(yB-yT)+'\" fill=\"'+c+'\"/>';"
+          "  rects=r(gy(25),gy(16),'rgba(239,68,68,0.15)')+r(gy(16),gy(13.5),'rgba(249,115,22,0.15)')+r(gy(13.5),gy(11),'rgba(250,204,21,0.15)')+r(gy(11),gy(7),'rgba(34,197,94,0.15)')+r(gy(7),gy(5),'rgba(250,204,21,0.15)')+r(gy(5),gy(0),'rgba(249,115,22,0.15)');"
+          "}"
+          "var svg='<svg viewBox=\"0 0 '+w+' '+h+'\">'+rects+"
+          "'<line class=\"chart-grid\" x1=\"0\" y1=\"'+(h-pad)+'\" x2=\"'+w+'\" y2=\"'+(h-pad)+'\"/>'+"
+          "'<line class=\"chart-grid\" x1=\"0\" y1=\"'+pad+'\" x2=\"'+w+'\" y2=\"'+pad+'\"/>'+"
+          "'<line class=\"chart-grid\" x1=\"'+(w*0.5)+'\" y1=\"'+pad+'\" x2=\"'+(w*0.5)+'\" y2=\"'+(h-pad)+'\"/>'+"
+          "dLine_x + dLine_n +"
+          "'<text class=\"chart-lbl\" x=\"0\" y=\"'+(pad-4)+'\">'+(data&&data.length>0?max.toFixed(1)+unit:'-')+'</text>'+"
+          "'<text class=\"chart-lbl\" x=\"0\" y=\"'+(h-pad-4)+'\">'+(data&&data.length>0?min.toFixed(1)+unit:'-')+'</text>'+"
+          "'<text class=\"chart-lbl\" x=\"0\" y=\"'+(h-2)+'\">-365T</text>'+"
           "'<text class=\"chart-lbl\" x=\"'+(w-35)+'\" y=\"'+(h-2)+'\">JETZT</text>'+"
           "'</svg>';"
           "el.innerHTML=svg;}"
@@ -474,6 +514,7 @@ static void handleRoot() {
   chunk(F("<div class='tab' id='t_ntp'     onclick='showTab(\"ntp\")'>🕐 NTP</div>"));
   chunk(F("<div class='tab' id='t_rtc'     onclick='showTab(\"rtc\")'>🧭 RTC</div>"));
   chunk(F("<div class='tab' id='t_env'     onclick='showTab(\"env\")'>🌡️ Umweltdaten</div>"));
+  chunk(F("<div class='tab' id='t_env365'  onclick='showTab(\"env365\")'>📅 Umwelt (Jahr)</div>"));
   chunk(F("<div class='tab' id='t_tz'      onclick='showTab(\"tz\")'>🌍 Zeitzone</div>"));
   chunk(F("<div class='tab' id='t_display' onclick='showTab(\"display\")'>💡 Display</div>"));
   chunk(F("<div class='tab' id='t_system'  onclick='showTab(\"system\")'>⚙️ System</div>"));
@@ -671,6 +712,32 @@ static void handleRoot() {
           "</div>"));
 
   chunk(F("</div>")); // panel env
+
+  // ============================================================
+  // TAB: UMWELTDATEN (JAHR)
+  // ============================================================
+  chunk(F("<div class='panel' id='p_env365'>"));
+  chunk(F("<h3>365-Tage Trend (Max/Min)</h3>"));
+  chunk(F("<div class='row2'>"));
+  chunk(F("<div class='chart-wrap'><label>Temperatur (\u00B0C)</label><div id='cy_temp' class='chart'></div></div>"));
+  chunk(F("<div class='chart-wrap'><label>Luftfeuchtigkeit (%)</label><div id='cy_humi' class='chart'></div></div>"));
+  chunk(F("</div><div class='row2'>"));
+  chunk(F("<div class='chart-wrap'><label>Luftdruck (hPa)</label><div id='cy_pres' class='chart'></div></div>"));
+  chunk(F("<div class='chart-wrap'><label>Luftqualität (IAQ)</label><div id='cy_iaq' class='chart'></div></div>"));
+  chunk(F("</div><div class='row2'>"));
+  chunk(F("<div class='chart-wrap'><label>Taupunkt (\u00B0C)</label><div id='cy_dew' class='chart'></div></div>"));
+  chunk(F("<div class='chart-wrap'><label>Gefühlte Temp (\u00B0C)</label><div id='cy_heat' class='chart'></div></div>"));
+  chunk(F("</div><div class='row2'>"));
+  chunk(F("<div class='chart-wrap' style='grid-column: 1 / -1'><label>Absolute Feuchte (g/m\u00B3)</label><div id='cy_abs' class='chart'></div></div>"));
+  chunk(F("</div><div class='hint' style='margin-top:2px;line-height:1.6'><b>Kategorien Absolute Feuchte:</b> "
+          "<span style='color:#ef4444'>&#9608;</span> &gt;16 (Sehr hoch) &nbsp; "
+          "<span style='color:#f97316'>&#9608;</span> 13.5-16 (Hoch) &nbsp; "
+          "<span style='color:#facc15'>&#9608;</span> 11-13.5 (Erhöht) &nbsp; "
+          "<span style='color:#22c55e'>&#9608;</span> 7-11 (Optimal) &nbsp; "
+          "<span style='color:#facc15'>&#9608;</span> 5-7 (Trocken) &nbsp; "
+          "<span style='color:#f97316'>&#9608;</span> &lt;5 (Sehr trocken)"
+          "</div>"));
+  chunk(F("</div>")); // panel env365
 
   // ============================================================
   // TAB: ZEITZONE
@@ -1373,10 +1440,35 @@ static void handleApiHistoryMonth() {
   server.sendContent("");
 }
 
+static void handleApiHistoryYear() {
+  server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+  server.send(200, F("application/json"), "");
+  server.sendContent(F("["));
+  
+  char buf[200];
+  for (uint16_t i = 0; i < bmeYearCount; i++) {
+    uint16_t idx = (bmeYearIdx - bmeYearCount + i + 365) % 365;
+    BmeYearEntry &e = bmeYearHistory[idx];
+    
+    float am = (6.112f * exp((17.67f * e.temp_min)/(e.temp_min + 243.5f)) * e.humi_min * 2.1674f) / (273.15f + e.temp_min);
+    float ax = (6.112f * exp((17.67f * e.temp_max)/(e.temp_max + 243.5f)) * e.humi_max * 2.1674f) / (273.15f + e.temp_max);
+    snprintf(buf, sizeof(buf), "{\"tmin\":%.1f,\"tmax\":%.1f,\"hmin\":%.1f,\"hmax\":%.1f,\"pmin\":%.1f,\"pmax\":%.1f,\"imin\":%.0f,\"imax\":%.0f,\"dmin\":%.1f,\"dmax\":%.1f,\"xmin\":%.1f,\"xmax\":%.1f,\"amin\":%.1f,\"amax\":%.1f}",
+             e.temp_min, e.temp_max, e.humi_min, e.humi_max, e.pres_min, e.pres_max, e.iaq_min, e.iaq_max, e.dew_min, e.dew_max, e.heat_min, e.heat_max, am, ax);
+    server.sendContent(buf);
+    
+    if (i < bmeYearCount - 1) server.sendContent(F(","));
+    if (i % 5 == 0) yield();
+  }
+  
+  server.sendContent(F("]"));
+  server.sendContent("");
+}
+
 static void setupWeb() {
   server.on(F("/"),            handleRoot);
   server.on(F("/api/history"), handleApiHistory);
   server.on(F("/api/history_month"), handleApiHistoryMonth);
+  server.on(F("/api/history_year"), handleApiHistoryYear);
   server.on(F("/save"),        HTTP_POST, handleSave);
   server.on(F("/apply"),       HTTP_POST, handleApply);
   server.on(F("/applyreboot"), HTTP_POST, handleApplyReboot);

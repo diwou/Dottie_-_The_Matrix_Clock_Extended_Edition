@@ -112,8 +112,23 @@ struct BmeMonthEntry {
 static BmeMonthEntry bmeMonthHistory[30];
 static uint8_t       bmeMonthIdx = 0;
 static uint8_t       bmeMonthCount = 0;
-static float         bmeSumTemp = 0, bmeSumHumi = 0, bmeSumPres = 0, bmeSumIaq = 0, bmeSumDew = 0, bmeSumHeat = 0;
 static int           bmeSumCount = 0;
+
+struct BmeYearEntry {
+  float temp_min, temp_max;
+  float humi_min, humi_max;
+  float pres_min, pres_max;
+  float iaq_min, iaq_max;
+  float dew_min, dew_max;
+  float heat_min, heat_max;
+};
+static BmeYearEntry bmeYearHistory[365];
+static uint16_t     bmeYearIdx = 0;
+static uint16_t     bmeYearCount = 0;
+static int          bmeLastYearDay = -1;
+static float yMinT=99, yMaxT=-99, yMinH=999, yMaxH=-999, yMinP=9999, yMaxP=-9999;
+static float yMinI=999, yMaxI=-999, yMinD=99, yMaxD=-99, yMinX=99, yMaxX=-99;
+static float bmeSumTemp = 0, bmeSumHumi = 0, bmeSumPres = 0, bmeSumIaq = 0, bmeSumDew = 0, bmeSumHeat = 0;
 static float         bmeIaqDiagram = -1.0f;
 static float         bmeDew = 0.0f;
 static float         bmeHeat = 0.0f;
@@ -508,6 +523,14 @@ static void saveHistory() {
     fMonth.write((uint8_t*)bmeMonthHistory, sizeof(bmeMonthHistory));
     fMonth.close();
   }
+  
+  File fYear = LittleFS.open("/bme_year.bin", "w");
+  if (fYear) {
+    fYear.write((uint8_t*)&bmeYearIdx, sizeof(bmeYearIdx));
+    fYear.write((uint8_t*)&bmeYearCount, sizeof(bmeYearCount));
+    fYear.write((uint8_t*)bmeYearHistory, sizeof(bmeYearHistory));
+    fYear.close();
+  }
 
   time_t t_now = time(nullptr);
   if (t_now > 1700000000UL) {
@@ -539,6 +562,16 @@ static void loadHistory() {
         fMonth.read((uint8_t*)bmeMonthHistory, sizeof(bmeMonthHistory));
       }
       fMonth.close();
+    }
+    
+    File fYear = LittleFS.open("/bme_year.bin", "r");
+    if (fYear) {
+      if (fYear.size() == sizeof(bmeYearIdx) + sizeof(bmeYearCount) + sizeof(bmeYearHistory)) {
+        fYear.read((uint8_t*)&bmeYearIdx, sizeof(bmeYearIdx));
+        fYear.read((uint8_t*)&bmeYearCount, sizeof(bmeYearCount));
+        fYear.read((uint8_t*)bmeYearHistory, sizeof(bmeYearHistory));
+      }
+      fYear.close();
     }
   }
 
@@ -579,6 +612,37 @@ static void updateHistory() {
       struct tm tm_l;
       localtime_r(&t_now, &tm_l);
       int currentPhase = (tm_l.tm_hour >= 6 && tm_l.tm_hour < 18) ? 1 : 0;
+      
+      if (bmeLastYearDay == -1) bmeLastYearDay = tm_l.tm_yday;
+      if (tm_l.tm_yday != bmeLastYearDay) {
+        bmeYearHistory[bmeYearIdx].temp_min = (yMinT == 99) ? bmeTemp : yMinT; 
+        bmeYearHistory[bmeYearIdx].temp_max = (yMaxT == -99) ? bmeTemp : yMaxT;
+        bmeYearHistory[bmeYearIdx].humi_min = (yMinH == 999) ? bmeHumi : yMinH; 
+        bmeYearHistory[bmeYearIdx].humi_max = (yMaxH == -999) ? bmeHumi : yMaxH;
+        bmeYearHistory[bmeYearIdx].pres_min = (yMinP == 9999) ? bmePres : yMinP; 
+        bmeYearHistory[bmeYearIdx].pres_max = (yMaxP == -9999) ? bmePres : yMaxP;
+        bmeYearHistory[bmeYearIdx].iaq_min  = (yMinI == 999) ? bmeIaqScore : yMinI; 
+        bmeYearHistory[bmeYearIdx].iaq_max  = (yMaxI == -999) ? bmeIaqScore : yMaxI;
+        bmeYearHistory[bmeYearIdx].dew_min  = (yMinD == 99) ? bmeDew : yMinD; 
+        bmeYearHistory[bmeYearIdx].dew_max  = (yMaxD == -99) ? bmeDew : yMaxD;
+        bmeYearHistory[bmeYearIdx].heat_min = (yMinX == 99) ? bmeHeat : yMinX; 
+        bmeYearHistory[bmeYearIdx].heat_max = (yMaxX == -99) ? bmeHeat : yMaxX;
+
+        bmeYearIdx = (bmeYearIdx + 1) % 365;
+        if (bmeYearCount < 365) bmeYearCount++;
+
+        yMinT=99; yMaxT=-99; yMinH=999; yMaxH=-999; yMinP=9999; yMaxP=-9999;
+        yMinI=999; yMaxI=-999; yMinD=99; yMaxD=-99; yMinX=99; yMaxX=-99;
+        bmeLastYearDay = tm_l.tm_yday;
+      }
+
+      if (bmeTemp < yMinT) yMinT = bmeTemp; if (bmeTemp > yMaxT) yMaxT = bmeTemp;
+      if (bmeHumi < yMinH) yMinH = bmeHumi; if (bmeHumi > yMaxH) yMaxH = bmeHumi;
+      if (bmePres < yMinP) yMinP = bmePres; if (bmePres > yMaxP) yMaxP = bmePres;
+      if (bmeIaqScore >= 0 && bmeIaqScore < yMinI) yMinI = bmeIaqScore; 
+      if (bmeIaqScore >= 0 && bmeIaqScore > yMaxI) yMaxI = bmeIaqScore;
+      if (bmeDew < yMinD) yMinD = bmeDew; if (bmeDew > yMaxD) yMaxD = bmeDew;
+      if (bmeHeat < yMinX) yMinX = bmeHeat; if (bmeHeat > yMaxX) yMaxX = bmeHeat;
       
       if (bmeLastPhase == -1) bmeLastPhase = currentPhase;
       
